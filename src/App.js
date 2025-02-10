@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Calendar, Search, User, Download, Filter, ArrowUpDown, LogIn } from 'lucide-react';
+import { Calendar, Search, User, Download, Filter, ArrowUpDown, LogIn, List } from 'lucide-react';
 import { ToastContainer, toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import { scheduleApi } from './Api';
@@ -296,6 +296,16 @@ const ExamScheduler = () => {
             >
               <Download className="w-5 h-5" />
               <span>Экспорт в Excel</span>
+            </button>
+            <button
+                    onClick={() => {
+                      toast.info(`Список предметов успешно загружен`);
+                      navigate(`/subjects/`);
+                    }}
+                    className="flex items-center space-x-2 px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600"
+                  >
+                    <List className="w-5 h-5" />
+                    <span>Список Предметов</span>
             </button>
           </div>
         </div>
