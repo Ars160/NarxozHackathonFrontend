@@ -1,8 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { ArrowLeft, Download, Search, User, Calendar, Clock, BookOpen, Users, Hash, Building } from 'lucide-react';
-import { ToastContainer, toast } from 'react-toastify';
-import 'react-toastify/dist/ReactToastify.css';
+import { ArrowLeft, Download, Search, User, Calendar, Clock, BookOpen, Users, Hash, Building, CheckCircle } from 'lucide-react';
+import { toast } from 'react-toastify';
 import 'bootstrap/dist/css/bootstrap.min.css';
 import Navbar from './NavBar';
 
@@ -87,7 +86,6 @@ const ListOfStudentsCRN = () => {
   return (
     <div className="container-fluid p-0 min-vh-100">
       <Navbar showFilterButton={false} />
-      <ToastContainer position="top-right" autoClose={3000} />
 
       <div className="container mt-4">
         {/* Header Section */}
@@ -167,6 +165,11 @@ const ListOfStudentsCRN = () => {
                 icon={<Building size={20} />}
                 title="Аудитория"
                 value={sectionInfo.schedule.Room}
+              />
+              <InfoCard
+                icon={<CheckCircle size={20} />}
+                title="Проктор"
+                value={sectionInfo.schedule.Proctor}
               />
             </div>
           </div>

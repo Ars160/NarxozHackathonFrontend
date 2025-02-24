@@ -192,12 +192,23 @@ body {
 }
 
 .btn-red {
-  background-color: #C8102E; /* Фирменный красный Narxoz */
+  background-color: #C8102E;
   color: #fff;
   border: 1px solid #c8102e;
 }
 .btn-red:hover {
-  background-color: #c8102e;
+  background-color: #ffffff;
+  color: #c8102e;
+  border: 1px solid #c8102e;
+}
+.btn-blue {
+  background-color: #664cda; 
   color: #fff;
+  border: 1px solid #664cda;
+}
+.btn-blue:hover {
+  background-color: #ffffff;
+  color: #664cda;
+  border: 1px solid #664cda;
 }
 

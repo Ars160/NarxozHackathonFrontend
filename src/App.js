@@ -1,11 +1,12 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Calendar, Search, User, Download, Filter, ArrowUpDown, LogIn, List } from 'lucide-react';
-import { ToastContainer, toast } from 'react-toastify';
-import 'react-toastify/dist/ReactToastify.css';
+import { Calendar, Search, User, Download, ArrowUpDown, LogIn, Filter, EditIcon} from 'lucide-react';
+import { toast } from 'react-toastify';
 import 'bootstrap/dist/css/bootstrap.min.css';
 import { scheduleApi } from './Api';
 import './style.css';
+import Navbar from './NavBar';
+import EditExamModal from './EditExamModal';
 
 const ExamScheduler = () => {
   const [scheduleData, setScheduleData] = useState([]);
@@ -21,10 +22,26 @@ const ExamScheduler = () => {
     stud_count: '',
     room: '',
     date: '',
-    time: ''
+    time: '',
+    proctor: '' // Added new filter field for proctor
   });
   const [sortConfig, setSortConfig] = useState({ key: null, direction: 'ascending' });
   const navigate = useNavigate();
+  const [editingExam, setEditingExam] = useState(null);
+
+  const onResetFilters = () => {
+    setFilterCriteria({
+      subject: '',
+    instructor: '',
+    section: '',
+    stud_count: '',
+    room: '',
+    date: '',
+    time: '',
+    proctor: ''
+    });
+  };
+  
 
   // Обработчик перехода с уведомлением
   const handleEntryClick = useCallback((examData) => {
@@ -48,6 +65,11 @@ const ExamScheduler = () => {
       const matchesStudCount = studCount 
         ? exam.Students_Count === parseInt(studCount, 10)
         : true;
+      
+      // Add filter for proctor
+      const proctorFilter = filterCriteria.proctor.toLowerCase().trim();
+      const proctorValue = exam.Proctor ? exam.Proctor.toString().toLowerCase() : '';
+      const matchesProctor = proctorFilter === '' || proctorValue.includes(proctorFilter);
   
       return (
         exam.Subject.toLowerCase().includes(filterCriteria.subject.toLowerCase().trim()) &&
@@ -55,6 +77,7 @@ const ExamScheduler = () => {
         exam.Section.toLowerCase().includes(filterCriteria.section.toLowerCase().trim()) &&
         matchesStudCount &&
         matchesRoom &&
+        matchesProctor &&
         (filterCriteria.date === '' || exam.Date.includes(filterCriteria.date)) &&
         matchesTime
       );
@@ -64,8 +87,12 @@ const ExamScheduler = () => {
   const sortData = useCallback((data, key) => {
     const direction = sortConfig.key === key && sortConfig.direction === 'ascending' ? 'descending' : 'ascending';
     const sorted = [...data].sort((a, b) => {
-      if (a[key] < b[key]) return direction === 'ascending' ? -1 : 1;
-      if (a[key] > b[key]) return direction === 'ascending' ? 1 : -1;
+      // Handle null, undefined, or NaN values for any field
+      const aValue = a[key] === null || a[key] === undefined || (typeof a[key] === 'number' && isNaN(a[key])) ? '' : a[key];
+      const bValue = b[key] === null || b[key] === undefined || (typeof b[key] === 'number' && isNaN(b[key])) ? '' : b[key];
+      
+      if (aValue < bValue) return direction === 'ascending' ? -1 : 1;
+      if (aValue > bValue) return direction === 'ascending' ? 1 : -1;
       return 0;
     });
     setSortConfig({ key, direction });
@@ -85,8 +112,20 @@ const ExamScheduler = () => {
     try {
       setLoading(true);
       const data = await scheduleApi.getGeneralSchedule();
-      setScheduleData(data);
-      setFilteredData(data);
+      
+      // Transform any NaN values to null for JSON compatibility
+      const sanitizedData = data.map(item => {
+        const newItem = {...item};
+        Object.keys(newItem).forEach(key => {
+          if (typeof newItem[key] === 'number' && isNaN(newItem[key])) {
+            newItem[key] = null;
+          }
+        });
+        return newItem;
+      });
+      
+      setScheduleData(sanitizedData);
+      setFilteredData(sanitizedData);
       toast.success('Расписание успешно загружено');
     } catch (err) {
       toast.error('Ошибка при загрузке расписания');
@@ -104,8 +143,20 @@ const ExamScheduler = () => {
     try {
       setLoading(true);
       const data = await scheduleApi.getStudentSchedule(id);
-      setStudentSchedule(data);
-      setFilteredData(data);
+      
+      // Transform any NaN values to null for JSON compatibility
+      const sanitizedData = data.map(item => {
+        const newItem = {...item};
+        Object.keys(newItem).forEach(key => {
+          if (typeof newItem[key] === 'number' && isNaN(newItem[key])) {
+            newItem[key] = null;
+          }
+        });
+        return newItem;
+      });
+      
+      setStudentSchedule(sanitizedData);
+      setFilteredData(sanitizedData);
       toast.success(`Расписание студента ${id} загружено`);
     } catch (err) {
       toast.error('Студент не найден');
@@ -173,8 +224,8 @@ const ExamScheduler = () => {
         <label className="form-label">Количество студентов</label>
         <input type="text" name="stud_count" value={filterCriteria.stud_count} onChange={handleFilterChange} className="form-control" placeholder="Фильтр по количество студентов" />
       </div>
-       {/* Фильтр по аудитории */}
-       <div className="col-12 col-sm-6 col-md-4 col-lg-3">
+      {/* Фильтр по аудитории */}
+      <div className="col-12 col-sm-6 col-md-4 col-lg-3">
         <label className="form-label">Аудитория</label>
         <input type="text" name="room" value={filterCriteria.room} onChange={handleFilterChange} className="form-control" placeholder="Фильтр по аудитории" />
       </div>
@@ -183,11 +234,16 @@ const ExamScheduler = () => {
         <label className="form-label">Дата</label>
         <input type="date" name="date" value={filterCriteria.date} onChange={handleFilterChange} className="form-control" />
       </div>
+      {/* Фильтр по проктору */}
+      <div className="col-12 col-sm-6 col-md-4 col-lg-3">
+        <label className="form-label">Проктор</label>
+        <input type="text" name="proctor" value={filterCriteria.proctor} onChange={handleFilterChange} className="form-control" placeholder="Фильтр по проктору" />
+      </div>
     </div>
   );
 
   const renderScheduleTable = (data) => (
-  <div className="table-responsive  rounded-lg shadow-sm">
+  <div className="table-responsive rounded-lg shadow-sm">
     <table className="table table-narxoz">
       <thead>
         <tr>
@@ -199,16 +255,18 @@ const ExamScheduler = () => {
             { key: 'Date', label: 'Дата' },
             { key: 'Time_Slot', label: 'Время' },
             { key: 'Room', label: 'Аудитория' },
+            { key: 'Proctor', label: 'Проктор' },
+            { key: 'actions', label: 'Действия', disableSort: true},
             { key: 'entry', label: 'Вход' }
           ].map(({ key, label }) => (
             <th
               key={key}
-              onClick={() => handleSort(key)}
+              onClick={() => key !== 'entry' && handleSort(key)}
               className="align-middle"
             >
               <div className="d-flex align-items-center justify-content-between">
                 <span>{label}</span>
-                <ArrowUpDown size={16} className="ms-2" />
+                {key !== 'entry' && <ArrowUpDown size={16} className="ms-2" />}
               </div>
             </th>
           ))}
@@ -218,7 +276,7 @@ const ExamScheduler = () => {
         {data.length === 0 ? (
           <tr>
             <td 
-              colSpan={selectedView === 'general' ? 10 : 9} 
+              colSpan={10} 
               className="text-center py-4 text-muted"
             >
               <div className="d-flex flex-column align-items-center">
@@ -237,11 +295,11 @@ const ExamScheduler = () => {
               <td data-label="CRN" className="text-primary">
                 {exam.Section}
               </td>
-                <td data-label="Количество студентов">
-                  <span className="badge bg-red-20 text-red rounded-pill">
-                    {exam.Students_Count}
-                  </span>
-                </td>
+              <td data-label="Количество студентов">
+                <span className="badge bg-red-20 text-red rounded-pill">
+                  {exam.Students_Count}
+                </span>
+              </td>
               <td data-label="Дата">
                 <div className="d-flex flex-column">
                   <span className="text-nowrap">
@@ -256,6 +314,15 @@ const ExamScheduler = () => {
                 <span className="badge bg-gray-100 text-dark rounded">
                   {exam.Room}
                 </span>
+              </td>
+              <td data-label="Проктор">{exam.Proctor}</td>
+              <td data-label="Редактировать">
+                <button 
+                  onClick={() => setEditingExam(exam)}
+                  className="btn btn-blue btn-sm d-inline-flex align-items-center">
+                  <EditIcon size={16} className="me-1" />
+                  Редактировать
+                </button>
               </td>
               <td data-label="Вход">
                 <button
@@ -276,59 +343,16 @@ const ExamScheduler = () => {
 
   return (
     <div className="container-fluid p-0 min-vh-100">
-      <ToastContainer
-        position="top-right"
-        autoClose={3000}
-        hideProgressBar={false}
-        newestOnTop={false}
-        closeOnClick
-        rtl={false}
-        pauseOnFocusLoss
-        draggable
-        pauseOnHover
-        theme="light"
-      />
-
-      {/* Увеличенный навбар */}
-      <nav className="navbar navbar-expand-lg bg-red text-white py-3 shadow-sm" style={{ backgroundColor: '#C8102E' }}>
-        <div className="container">
-          <h1 className="navbar-brand mb-0 h2 text-white">NARXOZ UNIVERSITY</h1>
-          <div className="d-flex gap-3 align-items-center">
-            <button
-              onClick={() => setFilteredData(selectedView === 'general' ? scheduleData : studentSchedule)}
-              className="btn btn-outline-light d-flex align-items-center gap-2"
-            >
-              <Filter size={20} />
-              <span>Сбросить фильтры</span>
-            </button>
-            <button
-              onClick={handleExport}
-              className="btn btn-light text-red d-flex align-items-center gap-2"
-              style={{ color: '#C8102E' }}
-            >
-              <Download size={20} />
-              <span>Экспорт</span>
-            </button>
-            <button
-              onClick={() => navigate('/subjects/')}
-              className="btn btn-light text-red d-flex align-items-center gap-2"
-              style={{ color: '#C8102E' }}
-            >
-              <List size={20} />
-              <span>Предметы</span>
-            </button>
-          </div>
-        </div>
-      </nav>
+      <Navbar />
 
       <div className="container mt-4">
         <div className="row g-3 mb-4">
-          <div className="col-12">
+        <div className="d-flex justify-content-between align-items-center mb-3">
             <div className="d-flex gap-3">
               <button
                 onClick={() => setSelectedView('general')}
                 className={`btn ${selectedView === 'general' ? 'btn-red text-white' : 'btn-outline-red'} d-flex align-items-center gap-2 py-2 px-4`}
-                style={{ 
+                style={{
                   backgroundColor: selectedView === 'general' ? '#C8102E' : 'transparent',
                   borderColor: '#C8102E',
                   color: selectedView === 'general' ? 'white' : '#C8102E'
@@ -340,7 +364,7 @@ const ExamScheduler = () => {
               <button
                 onClick={() => setSelectedView('student')}
                 className={`btn ${selectedView === 'student' ? 'btn-red text-white' : 'btn-outline-red'} d-flex align-items-center gap-2 py-2 px-4`}
-                style={{ 
+                style={{
                   backgroundColor: selectedView === 'student' ? '#C8102E' : 'transparent',
                   borderColor: '#C8102E',
                   color: selectedView === 'student' ? 'white' : '#C8102E'
@@ -350,7 +374,26 @@ const ExamScheduler = () => {
                 <span className="fs-5">Студент</span>
               </button>
             </div>
+          <div className="d-flex gap-3">
+            <button
+              onClick={onResetFilters}
+              className="btn btn-outline-red d-flex align-items-center gap-2"
+              style={{ color: '#C8102E', borderColor: '#C8102E' }}
+            >
+              <Filter size={20} />
+              <span>Сбросить фильтры</span>
+            </button>
+
+            <button
+              onClick={handleExport}
+              className="btn btn-red text-white d-flex align-items-center gap-2"
+              style={{ backgroundColor: '#C8102E' }}
+            >
+              <Download size={20} />
+              Экспорт
+            </button></div>
           </div>
+
 
           {selectedView === 'student' && (
             <div className="col-12 col-md-6">
@@ -373,6 +416,21 @@ const ExamScheduler = () => {
               </div>
             </div>
           )}
+
+{editingExam && (
+      <EditExamModal
+        exam={editingExam}
+        onClose={() => setEditingExam(null)}
+        onSave={(updatedExam) => {
+          // Обновляем данные в таблице
+          setFilteredData(prev => 
+            prev.map(item => 
+              item.id === updatedExam.id ? updatedExam : item
+            )
+          );
+        }}
+      />
+    )}
         </div>
 
         {renderFilterSection()}

@@ -1,8 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ToastContainer, toast } from 'react-toastify';
-import { ArrowLeft, Search, Trash2, Eye, BookOpen, GraduationCap, Users } from 'lucide-react';
-import 'react-toastify/dist/ReactToastify.css';
+import { toast } from 'react-toastify';
+import { ArrowLeft, Search, Trash2, Eye, BookOpen, GraduationCap, Users} from 'lucide-react';
 import 'bootstrap/dist/css/bootstrap.min.css';
 import Navbar from './NavBar';
 
@@ -97,7 +96,6 @@ const SubjectList = () => {
   return (
     <div className="container-fluid p-0 min-vh-100">
       <Navbar showFilterButton={false} />
-      <ToastContainer />
 
       <div className="container mt-4">
         {/* Header Section */}
@@ -155,7 +153,6 @@ const SubjectList = () => {
                         <tr>
                           <th className="py-3">Секция</th>
                           <th className="py-3">Преподаватель</th>
-                          <th className="py-3">Курс</th>
                           <th className="py-3 text-end">Действия</th>
                         </tr>
                       </thead>
@@ -164,7 +161,6 @@ const SubjectList = () => {
                           <tr key={group.Section}>
                             <td className="py-3">{group.Section}</td>
                             <td className="py-3">{group.Instructor}</td>
-                            <td className="py-3">{group.Course}</td>
                             <td className="py-3 text-end">
                               <button
                                 onClick={() => deleteSection(selectedSubject, group.Section)}
