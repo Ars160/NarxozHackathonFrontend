@@ -1,12 +1,15 @@
 import React, { useState, useEffect } from 'react';
-import { ArrowLeft, Download, Loader } from 'lucide-react';
 import { useParams, useNavigate } from 'react-router-dom';
+import { ArrowLeft, Download, Search, User, Calendar, Clock, BookOpen, Users, Hash, Building } from 'lucide-react';
 import { ToastContainer, toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
+import 'bootstrap/dist/css/bootstrap.min.css';
+import Navbar from './NavBar';
 
 const ListOfStudentsCRN = () => {
   const [sectionInfo, setSectionInfo] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [searchQuery, setSearchQuery] = useState('');
   const { sectionId } = useParams();
   const navigate = useNavigate();
 
@@ -17,12 +20,9 @@ const ListOfStudentsCRN = () => {
   const fetchSectionInfo = async () => {
     try {
       const response = await fetch(`http://localhost:5000/section/${sectionId}`);
-      if (!response.ok) {
-        throw new Error('Failed to fetch section info');
-      }
+      if (!response.ok) throw new Error('Failed to fetch section info');
       const data = await response.json();
       setSectionInfo(data);
-      toast.info(`ВХОД В CRN ${sectionId}`);
     } catch (error) {
       console.error('Error:', error);
       toast.error('Ошибка при загрузке информации о секции');
@@ -33,18 +33,25 @@ const ListOfStudentsCRN = () => {
 
   const handleExport = async () => {
     try {
-      const response = await fetch(`http://localhost:5000/section/${sectionId}/export`);
-      if (!response.ok) {
-        throw new Error('Export failed');
-      }
+      const response = await fetch(`http://localhost:5000/section/${sectionId}/export`, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+
+      if (!response.ok) throw new Error('Export failed');
+
       const blob = await response.blob();
       const url = window.URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
-      a.download = `section_${sectionId}_info.xlsx`;
+      a.download = `section-${sectionId}-students.xlsx`;
       document.body.appendChild(a);
       a.click();
+      window.URL.revokeObjectURL(url);
       document.body.removeChild(a);
+
       toast.success('Файл успешно экспортирован');
     } catch (error) {
       console.error('Error:', error);
@@ -52,18 +59,25 @@ const ListOfStudentsCRN = () => {
     }
   };
 
+  const filteredStudents = sectionInfo?.students.filter(student =>
+    student.fake_name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    student.fake_id.toLowerCase().includes(searchQuery.toLowerCase())
+  );
+
   if (loading) {
     return (
-      <div className="flex items-center justify-center h-screen">
-        <Loader className="w-8 h-8 animate-spin" />
+      <div className="min-vh-100 d-flex align-items-center justify-content-center bg-light">
+        <div className="spinner-border text-red" role="status" style={{ color: '#C8102E' }}>
+          <span className="visually-hidden">Загрузка...</span>
+        </div>
       </div>
     );
   }
 
   if (!sectionInfo) {
     return (
-      <div className="container mx-auto p-4">
-        <div className="text-center text-red-600">
+      <div className="container p-4">
+        <div className="alert alert-danger text-center" role="alert">
           Информация о секции не найдена
         </div>
       </div>
@@ -71,124 +85,145 @@ const ListOfStudentsCRN = () => {
   }
 
   return (
-    <div className="container mx-auto p-4 space-y-6">
-        <ToastContainer
-        position="top-right"
-        autoClose={3000}
-        hideProgressBar={false}
-        newestOnTop={false}
-        closeOnClick
-        rtl={false}
-        pauseOnFocusLoss
-        draggable
-        pauseOnHover
-        theme="light"
-      />
-      {/* Верхняя панель с кнопками */}
-      <div className="flex justify-between items-center mb-6">
-        <button
-          onClick={() => navigate(-1)}
-          className="flex items-center space-x-2 bg-gray-500 text-white px-4 py-2 rounded-lg hover:bg-gray-600"
-        >
-          <ArrowLeft className="w-5 h-5" />
-          <span>Назад к расписанию</span>
-        </button>
-        
-        <button
-          onClick={handleExport}
-          className="flex items-center space-x-2 bg-green-500 text-white px-4 py-2 rounded-lg hover:bg-green-600"
-        >
-          <Download className="w-5 h-5" />
-          <span>Экспорт в Excel</span>
-        </button>
-      </div>
+    <div className="container-fluid p-0 min-vh-100">
+      <Navbar showFilterButton={false} />
+      <ToastContainer position="top-right" autoClose={3000} />
 
-      {/* Основная информация */}
-      <div className="bg-white rounded-lg shadow-lg p-6">
-        <h2 className="text-xl font-bold mb-6">
-          Информация о секции {sectionInfo.section_id}
-        </h2>
-
-        <div>
-          <div className="bg-gray-50 rounded-lg p-4 max-h-96 overflow-y-auto">
-            <table className="min-w-full divide-y divide-gray-200">
-              <thead className="bg-gray-100">
-                <tr>
-                  <th className="px-4 py-2 text-left text-gray-600">Преподаватель</th>
-                  <th className="px-4 py-2 text-left text-gray-600">Предмет</th>
-                  <th className="px-4 py-2 text-left text-gray-600">Курс</th>
-                  <th className="px-4 py-2 text-left text-gray-600">Образовательная программа</th>
-                  <th className="px-4 py-2 text-left text-gray-600">Форма обучения</th>
-                  <th className="px-4 py-2 text-left text-gray-600">Всего студентов</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-gray-200">
-                  <tr  className="hover:bg-gray-100">
-                    <td className="px-4 py-2">{sectionInfo.section_info.instructor}</td>
-                    <td className="px-4 py-2">{sectionInfo.section_info.subject}</td>
-                    <td className="px-4 py-2">{sectionInfo.section_info.course}</td>
-                    <td className="px-4 py-2">{sectionInfo.section_info.edu_program}</td>
-                    <td className="px-4 py-2">{sectionInfo.section_info.years_of_study}</td>
-                    <td className="px-4 py-2">{sectionInfo.section_info.total_students}</td>
-                  </tr>
-              </tbody>
-            </table>
+      <div className="container mt-4">
+        {/* Header Section */}
+        <div className="d-flex flex-column flex-lg-row justify-content-between gap-3 mb-4">
+          <button
+            onClick={() => navigate(-1)}
+            className="btn btn-outline-red d-flex align-items-center gap-2"
+            style={{ color: '#C8102E', borderColor: '#C8102E' }}
+          >
+            <ArrowLeft size={20} />
+            Назад к расписанию
+          </button>
+          
+          <div className="d-flex gap-3">
+            <div className="position-relative">
+              <input
+                type="text"
+                placeholder="Поиск студентов..."
+                className="form-control border-red"
+                style={{ borderColor: '#C8102E', paddingLeft: '2.5rem' }}
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+              />
+              <Search size={20} className="position-absolute top-50 translate-middle-y ms-2 text-muted" />
+            </div>
+            
+            <button
+              onClick={handleExport}
+              className="btn btn-red text-white d-flex align-items-center gap-2"
+              style={{ backgroundColor: '#C8102E' }}
+            >
+              <Download size={20} />
+              Экспорт
+            </button>
           </div>
         </div>
 
-        {/* Информация о расписании */}
-        {sectionInfo.schedule && (
-          <div className="mb-6">
-            <h3 className="text-lg font-semibold mb-3">Расписание экзамена</h3>
-
-        <div>
-          <div className="bg-gray-50 rounded-lg p-4 max-h-96 overflow-y-auto">
-            <table className="min-w-full divide-y divide-gray-200">
-              <thead className="bg-gray-100">
-                <tr>
-                  <th className="px-4 py-2 text-left text-gray-600">Дата</th>
-                  <th className="px-4 py-2 text-left text-gray-600">Время</th>
-                  <th className="px-4 py-2 text-left text-gray-600">Аудитория</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-gray-200">
-                  <tr  className="hover:bg-gray-100">
-                    <td className="px-4 py-2">{sectionInfo.schedule.Date}</td>
-                    <td className="px-4 py-2">{sectionInfo.schedule.Time_Slot}</td>
-                    <td className="px-4 py-2">{sectionInfo.schedule.Room}</td>
-                  </tr>
-              </tbody>
-            </table>
+        {/* Main Content */}
+        <div className="card shadow-sm mb-4">
+          {/* Section Header */}
+          <div className="card-header bg-white border-bottom p-4">
+            <h1 className="h3 mb-0 d-flex align-items-center gap-2">
+              <Hash size={24} style={{ color: '#C8102E' }} />
+              Секция {sectionId}
+            </h1>
           </div>
-        </div>
-          </div>
-        )}
 
-        {/* Список студентов */}
-        <div>
-          <h3 className="text-lg font-semibold mb-3">Список студентов</h3>
-          <div className="bg-gray-50 rounded-lg p-4 max-h-96 overflow-y-auto">
-            <table className="min-w-full divide-y divide-gray-200">
-              <thead className="bg-gray-100">
-                <tr>
-                  <th className="px-4 py-2 text-left text-gray-600">ID</th>
-                  <th className="px-4 py-2 text-left text-gray-600">Имя</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-gray-200">
-                {sectionInfo.students.map((student, index) => (
-                  <tr key={index} className="hover:bg-gray-100">
-                    <td className="px-4 py-2">{student.fake_id}</td>
-                    <td className="px-4 py-2">{student.fake_name}</td>
+          {/* Section Info Cards */}
+          <div className="card-body p-4">
+            <div className="row g-4">
+              <InfoCard
+                icon={<User size={20} />}
+                title="Преподаватель"
+                value={sectionInfo.schedule.Instructor}
+              />
+              <InfoCard
+                icon={<BookOpen size={20} />}
+                title="Предмет"
+                value={sectionInfo.schedule.Subject}
+              />
+              <InfoCard
+                icon={<Users size={20} />}
+                title="Количество студентов"
+                value={sectionInfo.schedule.Students_Count}
+              />
+              <InfoCard
+                icon={<Calendar size={20} />}
+                title="Дата экзамена"
+                value={new Date(sectionInfo.schedule.Date).toLocaleDateString('ru-RU')}
+              />
+              <InfoCard
+                icon={<Clock size={20} />}
+                title="Время экзамена"
+                value={sectionInfo.schedule.Time_Slot}
+              />
+              <InfoCard
+                icon={<Building size={20} />}
+                title="Аудитория"
+                value={sectionInfo.schedule.Room}
+              />
+            </div>
+          </div>
+
+          {/* Students Table */}
+          <div className="card-body border-top p-4">
+            <div className="d-flex align-items-center gap-2 mb-4">
+              <Users size={20} style={{ color: '#C8102E' }} />
+              <h3 className="h5 mb-0">Список студентов ({filteredStudents.length})</h3>
+            </div>
+
+            <div className="table-responsive">
+              <table className="table table-hover mb-0">
+                <thead className="bg-light">
+                  <tr>
+                    <th style={{ width: '40%' }} className="py-3">ID студента</th>
+                    <th style={{ width: '60%' }} className="py-3">Имя студента</th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
+                </thead>
+                <tbody>
+                  {filteredStudents.map((student, index) => (
+                    <tr key={index} className="align-middle">
+                      <td className="py-3">{student.fake_id}</td>
+                      <td className="py-3">{student.fake_name}</td>
+                    </tr>
+                  ))}
+                  {filteredStudents.length === 0 && (
+                    <tr>
+                      <td colSpan="2" className="text-center py-4 text-muted">
+                        Студенты не найдены
+                      </td>
+                    </tr>
+                  )}
+                </tbody>
+              </table>
+            </div>
           </div>
         </div>
       </div>
     </div>
   );
 };
+
+const InfoCard = ({ icon, title, value }) => (
+  <div className="col-md-6 col-lg-4">
+    <div className="card h-100 border">
+      <div className="card-body p-3">
+        <div className="d-flex align-items-center gap-3">
+          {icon && <div style={{ color: '#C8102E' }}>{icon}</div>}
+          <div>
+            <h3 className="text-muted small mb-1">{title}</h3>
+            <p className="mb-0 h6">{value}</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+);
 
 export default ListOfStudentsCRN;

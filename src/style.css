@@ -1,140 +1,203 @@
-/* Стили для кнопок */
-button {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  padding: 10px 16px;
+/* style.css */
+:root {
+  --narxoz-red: #C8102E;
+  --narxoz-light-red: #F8E8E8;
+  --narxoz-light: #F8F9FA;
+  --narxoz-dark: #2D2D2D;
+  --narxoz-gray: #6C757D;
+}
+
+/* Общие стили */
+body {
+  font-family: 'Montserrat',Arial,sans-serif;
+  background-color: var(--narxoz-light);
+  color: var(--narxoz-dark);
+}
+
+/* Навбар */
+.navbar-narxoz {
+  background-color: var(--narxoz-red) !important;
+  padding: 1.2rem 0;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.navbar-brand {
+  font-weight: 700;
+  font-size: 1.5rem;
+  letter-spacing: 0.5px;
+}
+
+/* Кнопки */
+.btn-narxoz {
+  background-color: var(--narxoz-red);
+  border-color: var(--narxoz-red);
+  color: white;
+  padding: 0.75rem 1.5rem;
   border-radius: 8px;
-  border: none;
-  font-weight: 500;
-  font-size: 14px;
-  cursor: pointer;
   transition: all 0.2s ease;
+  font-weight: 500;
+}
+
+.btn-narxoz:hover {
+  background-color: #A00D26;
+  border-color: #A00D26;
+  color: white;
+  transform: translateY(-1px);
+}
+
+.btn-outline-narxoz {
+  border: 2px solid var(--narxoz-red);
+  color: var(--narxoz-red);
+  background-color: transparent;
+}
+
+.btn-outline-narxoz:hover {
+  background-color: var(--narxoz-red);
   color: white;
 }
 
-/* Кнопка "Общее расписание" и "Расписание студента" */
-button[class*="bg-gray-200"] {
-  background-color: #f1f3f4;
-  color: #3c4043;
+/* Формы */
+.form-control:focus {
+  border-color: var(--narxoz-red);
+  box-shadow: 0 0 0 0.25rem rgba(200, 16, 46, 0.25);
 }
 
-button[class*="bg-gray-200"]:hover {
-  background-color: #e8eaed;
+.input-group-text {
+  background-color: var(--narxoz-light-red);
+  border-color: var(--narxoz-red);
+  color: var(--narxoz-red);
 }
 
-/* Активная кнопка (синяя) */
-button[class*="bg-blue-500"] {
-  background-color: #1a73e8;
-  color: white;
-}
-
-button[class*="bg-blue-500"]:hover {
-  background-color: #1557b0;
-}
-
-/* Зеленая кнопка (Экспорт) */
-button[class*="bg-green-500"] {
-  background-color: #34a853;
-  color: white;
-}
-
-button[class*="bg-green-500"]:hover {
-  background-color: #2d8a46;
-}
-
-/* Серая кнопка (Сброс фильтров) */
-button[class*="bg-gray-500"] {
-  background-color: #5f6368;
-  color: white;
-}
-
-button[class*="bg-gray-500"]:hover {
-  background-color: #494c50;
-}
-
-/* Стили для input полей */
-input[type="text"],
-input[type="date"] {
-  padding: 8px 12px;
-  border: 1px solid #dadce0;
+/* Таблица */
+.table-narxoz {
   border-radius: 8px;
-  font-size: 14px;
-  width: 50%;
-  transition: border-color 0.2s ease;
-  background-color: white;
+  overflow: hidden;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
 }
 
-input[type="text"]:focus,
-input[type="date"]:focus {
-  border-color: #1a73e8;
-  outline: none;
-  box-shadow: 0 0 0 2px rgba(26, 115, 232, 0.1);
+.table-narxoz thead {
+  background-color: var(--narxoz-red);
+  color: white;
 }
 
-/* Контейнер для фильтров */
-.grid-cols-1 {
-  gap: 16px;
-  background-color: #f8f9fa;
-  padding: 16px;
-  border-radius: 8px;
+.table-narxoz thead th {
+  border-bottom: none;
+  font-weight: 600;
+  padding: 1rem;
 }
 
-/* Заголовки для input полей */
-label {
-  display: block;
-  margin-bottom: 4px;
-  color: #5f6368;
-  font-size: 14px;
+.table-narxoz tbody td {
+  padding: 0.75rem;
+  vertical-align: middle;
+  border-color: #F1F1F1;
 }
 
-/* Контейнер для поиска студента */
-.flex.space-x-2 {
-  gap: 8px;
+.table-narxoz tbody tr:nth-child(even) {
+  background-color: var(--narxoz-light-red);
 }
 
-/* Стили для иконок в кнопках */
-svg {
+.table-narxoz tbody tr:hover {
+  background-color: rgba(200, 16, 46, 0.05);
+  transition: background-color 0.2s ease;
+}
+
+/* Иконки */
+.icon-sm {
   width: 20px;
   height: 20px;
 }
 
-/* Таблица */
-table {
-  width: 90%;
-  margin: 0 auto;
-  border-collapse: collapse;
-  margin-top: 20px;
+/* Загрузка */
+.loading-spinner {
+  width: 3rem;
+  height: 3rem;
+  border-width: 0.25em;
+  color: var(--narxoz-red);
 }
 
-th {
-  background-color: #ff0000;
-  color: white;
-  padding: 10px;
-  cursor: pointer;
+/* Фильтры */
+.filter-card {
+  background: white;
+  border-radius: 12px;
+  padding: 1.5rem;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
 }
 
-tr:nth-child(even) {
-  background-color: #f2f2f2;
+/* Адаптивность */
+@media (max-width: 768px) {
+  .navbar-brand {
+    font-size: 1.2rem;
+  }
+  
+  .btn-narxoz {
+    padding: 0.5rem 1rem;
+    font-size: 0.9rem;
+  }
+  
+  .table-narxoz thead {
+    display: none;
+  }
+  
+  .table-narxoz tbody td {
+    display: block;
+    text-align: right;
+    padding: 0.75rem;
+    border-bottom: 1px solid #F1F1F1;
+  }
+  
+  .table-narxoz tbody td::before {
+    content: attr(data-label);
+    float: left;
+    font-weight: 600;
+    color: var(--narxoz-gray);
+  }
+  
+  .table-narxoz tbody tr {
+    margin-bottom: 1rem;
+    display: block;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+    border-radius: 8px;
+  }
 }
 
-tr:hover {
-  background-color: #ddd;
+/* Дополнение к предыдущим стилям */
+.badge {
+  padding: 0.35em 0.65em;
+  font-size: 0.875em;
 }
 
-td {
-  padding: 10px;
-  text-align: center;
-  border: 1px solid #ddd;
+.bg-red-20 {
+  background-color: rgba(200, 16, 46, 0.1);
 }
 
-/* Для загрузки и ошибок */
-.loading,
-.error {
-  text-align: center;
-  margin-top: 20px;
+.text-red {
+  color: var(--narxoz-red);
 }
 
-.error {
-  color: red;
+.bg-gray-100 {
+  background-color: #f8f9fa;
 }
+
+.text-nowrap {
+  white-space: nowrap;
+}
+
+.table-narxoz td {
+  vertical-align: middle;
+  transition: background-color 0.2s ease;
+}
+
+.table-narxoz tr:hover td {
+  background-color: rgba(200, 16, 46, 0.03);
+}
+
+.btn-red {
+  background-color: #C8102E; /* Фирменный красный Narxoz */
+  color: #fff;
+  border: 1px solid #c8102e;
+}
+.btn-red:hover {
+  background-color: #c8102e;
+  color: #fff;
+}
+
