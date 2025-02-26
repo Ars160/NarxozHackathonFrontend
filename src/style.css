@@ -69,16 +69,25 @@ body {
 }
 
 /* Таблица */
+.table-container {
+  position: relative;
+  max-height: 500px; /* Или любой нужный размер */
+  overflow-y: auto;
+}
+
 .table-narxoz {
-  border-radius: 8px;
-  overflow: hidden;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  width: 100%;
+  border-collapse: collapse;
 }
 
 .table-narxoz thead {
+  position: sticky;
+  top: 0;
   background-color: var(--narxoz-red);
   color: white;
+  z-index: 10;
 }
+
 
 .table-narxoz thead th {
   border-bottom: none;
@@ -95,6 +104,7 @@ body {
 .table-narxoz tbody tr:nth-child(even) {
   background-color: var(--narxoz-light-red);
 }
+
 
 .table-narxoz tbody tr:hover {
   background-color: rgba(200, 16, 46, 0.05);

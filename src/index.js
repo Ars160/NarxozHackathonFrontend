@@ -12,8 +12,9 @@ root.render(
     <BrowserRouter>
         <Routes>
             <Route path="/" element={<ExamScheduler />} />
+            <Route path="/subjects" element={<SubjectList />} />
             <Route path="/section/:sectionId" element={<ListOfStudentsCRN />} />
-            <Route path="/subjects" element={<SubjectList />} />  {/* Добавляем новый маршрут */}
+            
         </Routes>
     </BrowserRouter>
 );

@@ -19,11 +19,10 @@ const ExamScheduler = () => {
     subject: '',
     instructor: '',
     section: '',
-    stud_count: '',
     room: '',
     date: '',
     time: '',
-    proctor: '' // Added new filter field for proctor
+    proctor: ''
   });
   const [sortConfig, setSortConfig] = useState({ key: null, direction: 'ascending' });
   const navigate = useNavigate();
@@ -34,7 +33,6 @@ const ExamScheduler = () => {
       subject: '',
     instructor: '',
     section: '',
-    stud_count: '',
     room: '',
     date: '',
     time: '',
@@ -60,11 +58,6 @@ const ExamScheduler = () => {
       const matchesRoom = roomValue 
         ? exam.Room.toString() === roomValue
         : true;
-  
-      const studCount = filterCriteria.stud_count.trim();
-      const matchesStudCount = studCount 
-        ? exam.Students_Count === parseInt(studCount, 10)
-        : true;
       
       // Add filter for proctor
       const proctorFilter = filterCriteria.proctor.toLowerCase().trim();
@@ -75,7 +68,6 @@ const ExamScheduler = () => {
         exam.Subject.toLowerCase().includes(filterCriteria.subject.toLowerCase().trim()) &&
         exam.Instructor.toLowerCase().includes(filterCriteria.instructor.toLowerCase().trim()) &&
         exam.Section.toLowerCase().includes(filterCriteria.section.toLowerCase().trim()) &&
-        matchesStudCount &&
         matchesRoom &&
         matchesProctor &&
         (filterCriteria.date === '' || exam.Date.includes(filterCriteria.date)) &&
@@ -87,7 +79,6 @@ const ExamScheduler = () => {
   const sortData = useCallback((data, key) => {
     const direction = sortConfig.key === key && sortConfig.direction === 'ascending' ? 'descending' : 'ascending';
     const sorted = [...data].sort((a, b) => {
-      // Handle null, undefined, or NaN values for any field
       const aValue = a[key] === null || a[key] === undefined || (typeof a[key] === 'number' && isNaN(a[key])) ? '' : a[key];
       const bValue = b[key] === null || b[key] === undefined || (typeof b[key] === 'number' && isNaN(b[key])) ? '' : b[key];
       
@@ -112,8 +103,6 @@ const ExamScheduler = () => {
     try {
       setLoading(true);
       const data = await scheduleApi.getGeneralSchedule();
-      
-      // Transform any NaN values to null for JSON compatibility
       const sanitizedData = data.map(item => {
         const newItem = {...item};
         Object.keys(newItem).forEach(key => {
@@ -219,11 +208,6 @@ const ExamScheduler = () => {
         <label className="form-label">CRN</label>
         <input type="text" name="section" value={filterCriteria.section} onChange={handleFilterChange} className="form-control" placeholder="Фильтр по CRN" />
       </div>
-      {/* Фильтр по Количество Студентов */}
-      <div className="col-12 col-sm-6 col-md-4 col-lg-3">
-        <label className="form-label">Количество студентов</label>
-        <input type="text" name="stud_count" value={filterCriteria.stud_count} onChange={handleFilterChange} className="form-control" placeholder="Фильтр по количество студентов" />
-      </div>
       {/* Фильтр по аудитории */}
       <div className="col-12 col-sm-6 col-md-4 col-lg-3">
         <label className="form-label">Аудитория</label>
@@ -243,7 +227,7 @@ const ExamScheduler = () => {
   );
 
   const renderScheduleTable = (data) => (
-  <div className="table-responsive rounded-lg shadow-sm">
+  <div className="table-responsive rounded-lg shadow-sm table-container">
     <table className="table table-narxoz">
       <thead>
         <tr>
@@ -251,7 +235,6 @@ const ExamScheduler = () => {
             { key: 'Instructor', label: 'Преподаватель' },
             { key: 'Subject', label: 'Предмет' },
             { key: 'Section', label: 'CRN' },
-            { key: 'Students_Count', label: 'Количество студентов' },
             { key: 'Date', label: 'Дата' },
             { key: 'Time_Slot', label: 'Время' },
             { key: 'Room', label: 'Аудитория' },
@@ -295,11 +278,6 @@ const ExamScheduler = () => {
               <td data-label="CRN" className="text-primary">
                 {exam.Section}
               </td>
-              <td data-label="Количество студентов">
-                <span className="badge bg-red-20 text-red rounded-pill">
-                  {exam.Students_Count}
-                </span>
-              </td>
               <td data-label="Дата">
                 <div className="d-flex flex-column">
                   <span className="text-nowrap">
@@ -311,7 +289,7 @@ const ExamScheduler = () => {
                 {exam.Time_Slot}
               </td>
               <td data-label="Аудитория">
-                <span className="badge bg-gray-100 text-dark rounded">
+                <span className="badge bg-red-20 text-red">
                   {exam.Room}
                 </span>
               </td>
@@ -347,8 +325,8 @@ const ExamScheduler = () => {
 
       <div className="container mt-4">
         <div className="row g-3 mb-4">
-        <div className="d-flex justify-content-between align-items-center mb-3">
-            <div className="d-flex gap-3">
+        <div className="d-flex justify-content-between align-items-center mb-3 flex-wrap">
+            <div className="d-flex gap-3 flex-wrap">
               <button
                 onClick={() => setSelectedView('general')}
                 className={`btn ${selectedView === 'general' ? 'btn-red text-white' : 'btn-outline-red'} d-flex align-items-center gap-2 py-2 px-4`}
@@ -374,7 +352,7 @@ const ExamScheduler = () => {
                 <span className="fs-5">Студент</span>
               </button>
             </div>
-          <div className="d-flex gap-3">
+          <div className="d-flex gap-3 mt-2 flex-wrap">
             <button
               onClick={onResetFilters}
               className="btn btn-outline-red d-flex align-items-center gap-2"
@@ -391,7 +369,8 @@ const ExamScheduler = () => {
             >
               <Download size={20} />
               Экспорт
-            </button></div>
+            </button>
+            </div>
           </div>
 
 
