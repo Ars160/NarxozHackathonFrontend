@@ -1,9 +1,7 @@
-// src/services/api.js
 
-const BASE_URL = 'http://localhost:5000'; // Замените на ваш URL бэкенда
+const BASE_URL = 'http://localhost:5000'; 
 
 export const scheduleApi = {
-  // Получение общего расписания
   getGeneralSchedule: async () => {
     try {
       const response = await fetch(`${BASE_URL}/schedule`);
@@ -18,7 +16,6 @@ export const scheduleApi = {
     }
   },
 
-  // Получение расписания для конкретного студента
   getStudentSchedule: async (studentId) => {
     try {
       const response = await fetch(`${BASE_URL}/schedule/student/${studentId}`);
@@ -32,7 +29,6 @@ export const scheduleApi = {
     }
   },
 
-  // Экспорт общего расписания в Excel
   exportGeneralSchedule: async () => {
     try {
       const response = await fetch(`${BASE_URL}/schedule/export`);
@@ -53,7 +49,6 @@ export const scheduleApi = {
     }
   },
 
-  // Экспорт расписания студента в Excel
   exportStudentSchedule: async (studentId) => {
     try {
       const response = await fetch(`${BASE_URL}/schedule/student/${studentId}/export`);

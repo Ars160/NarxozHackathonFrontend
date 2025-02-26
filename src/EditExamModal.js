@@ -7,9 +7,8 @@ const EditExamModal = ({ exam, onClose, onSave }) => {
   const [availableProctors, setAvailableProctors] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
 
-  // Функция загрузки доступных аудиторий и прокторов
   const fetchAvailableOptions = useCallback(async () => {
-    if (!formData.Date || !formData.Time_Slot) return; // Если нет даты и времени, не запрашиваем данные
+    if (!formData.Date || !formData.Time_Slot) return;
 
     setIsLoading(true);
     try {

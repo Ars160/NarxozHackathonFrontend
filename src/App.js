@@ -41,7 +41,6 @@ const ExamScheduler = () => {
   };
   
 
-  // Обработчик перехода с уведомлением
   const handleEntryClick = useCallback((examData) => {
     toast.info(`ВХОД В CRN ${examData.Section}`);
     navigate(`/section/${examData.Section}`);
@@ -59,7 +58,6 @@ const ExamScheduler = () => {
         ? exam.Room.toString() === roomValue
         : true;
       
-      // Add filter for proctor
       const proctorFilter = filterCriteria.proctor.toLowerCase().trim();
       const proctorValue = exam.Proctor ? exam.Proctor.toString().toLowerCase() : '';
       const matchesProctor = proctorFilter === '' || proctorValue.includes(proctorFilter);
@@ -133,7 +131,6 @@ const ExamScheduler = () => {
       setLoading(true);
       const data = await scheduleApi.getStudentSchedule(id);
       
-      // Transform any NaN values to null for JSON compatibility
       const sanitizedData = data.map(item => {
         const newItem = {...item};
         Object.keys(newItem).forEach(key => {
