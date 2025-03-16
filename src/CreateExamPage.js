@@ -1,7 +1,7 @@
 import 'bootstrap/dist/css/bootstrap.min.css';
 import './style.css';
 import Navbar from './NavBar';
-import { Calendar } from 'lucide-react';
+import { ClipboardList } from 'lucide-react';
 import { useState } from 'react';
 import CreateExamModal from './CreateExamModal';
 
@@ -38,7 +38,7 @@ const CreateExamPage = () => {
                   color: 'white'
                 }}
               >
-                <Calendar size={20} />
+                <ClipboardList size={20} />
                 <span className="fs-5">Создать экзамен</span>
               </button>
             </div>
@@ -49,7 +49,7 @@ const CreateExamPage = () => {
               <table className="table table-narxoz">
                 <thead>
                   <tr>
-                    <th>Называние</th>
+                    <th>Название</th>
                     <th>Дата</th>
                   </tr>
                 </thead>
