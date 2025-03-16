@@ -82,7 +82,6 @@ export const scheduleApi = {
       throw error;
     }
   },
-
   getSubjects: async () => {
     try {
       const response = await fetch(`${BASE_URL}/api/manage`, {
@@ -115,9 +114,50 @@ export const scheduleApi = {
       if (!response.ok) {
         throw new Error('Network response was not ok');
       }
-      return await response.json();
+      const data = await response.json();
+      return data;
     } catch (error) {
       console.error('Error deleting subject:', error);
+      throw error;
+    }
+  },
+
+  deleteSection: async (section) => {
+    try {
+      const response = await fetch(`${BASE_URL}/api/manage`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ action: 'delete_section', section }),
+      });
+      if (!response.ok) {
+        throw new Error('Network response was not ok');
+      }
+      const data = await response.json();
+      return data;
+    } catch (error) {
+      console.error('Error deleting section:', error);
+      throw error;
+    }
+  },
+
+  generateSchedule: async () => {
+    try {
+      const response = await fetch(`${BASE_URL}/api/manage`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ action: 'generate' }),
+      });
+      if (!response.ok) {
+        throw new Error('Network response was not ok');
+      }
+      const data = await response.json();
+      return data;
+    } catch (error) {
+      console.error('Error generating schedule:', error);
       throw error;
     }
   },

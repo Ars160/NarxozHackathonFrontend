@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Modal, Button, Form } from 'react-bootstrap';
 import { scheduleApi } from './Api';
+import { useNavigate } from 'react-router-dom';
 
 const CreateExamModal = ({ show, onClose, onSave }) => {
   const [fileExams, setFileExams] = useState(null);
@@ -8,6 +9,7 @@ const CreateExamModal = ({ show, onClose, onSave }) => {
   const [fileFaculties, setFileFaculties] = useState(null);
   const [startDate, setStartDate] = useState('');
   const [numDays, setNumDays] = useState(14);
+  const navigate = useNavigate();
 
   const handleSubmit = async () => {
     const formData = new FormData();
@@ -21,6 +23,7 @@ const CreateExamModal = ({ show, onClose, onSave }) => {
       const newExam = await scheduleApi.createExam(formData);
       onSave(newExam);
       onClose();
+      navigate('/manage-subject-list')
     } catch (err) {
       console.error('Ошибка при создании экзамена', err);
     }
