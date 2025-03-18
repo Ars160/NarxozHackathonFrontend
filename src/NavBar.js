@@ -8,15 +8,28 @@ const Navbar = () => {
   const navigate = useNavigate();
   const location = useLocation();
 
-  const hiddenRoutes = ['/create-exam']; 
+  const hiddenRoutes = ['/create-exam','/manage-subject-list']; 
 
   const shouldRenderAdditionalButton = !hiddenRoutes.includes(location.pathname);
 
   const isOnCreateExamPage = location.pathname === '/create-exam';
+  const isOnManageSubjectListPage = location.pathname === '/manage-subject-list';
+  
   const additionalButtonText = isOnCreateExamPage ? 'Главная страница' : 'Экзамены';
   const additionalButtonAction = isOnCreateExamPage 
     ? () => navigate('/') 
-    : () => navigate('/create-exam');
+    : () => {
+      if (isOnManageSubjectListPage) {
+        const confirmNavigation = window.confirm(
+          'Вы точно хотите уйти? Все несохраненные изменения будут потеряны.'
+        );
+        if (confirmNavigation) {
+          navigate('/create-exam');
+        }
+      } else {
+        navigate('/create-exam');
+      }
+    };
   const additionalButtonIcon = isOnCreateExamPage ? <Home size={20} /> : <ClipboardList size={20} />;
 
   return (

@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'react-toastify';
-import { ArrowLeft, Search, Trash2, Eye, BookOpen, GraduationCap, Users } from 'lucide-react';
+import { Search, Trash2, Eye, BookOpen, GraduationCap, Users, X } from 'lucide-react';
 import 'bootstrap/dist/css/bootstrap.min.css';
+import './style.css';
 import Navbar from './NavBar';
 import { scheduleApi } from './Api';
 
@@ -12,6 +13,7 @@ const ManagePredSubjectList = () => {
   const [subjectGroups, setSubjectGroups] = useState({});
   const [loading, setLoading] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
+  const [isGroupsOpen, setIsGroupsOpen] = useState(false);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -35,6 +37,7 @@ const ManagePredSubjectList = () => {
       if (data.success) {
         setSubjectGroups(data.groups);
         setSelectedSubject(subject);
+        setIsGroupsOpen(true);
         toast.success(`Группы для предмета "${subject}" успешно загружены`);
       }
     } catch (error) {
@@ -43,14 +46,19 @@ const ManagePredSubjectList = () => {
     setLoading(false);
   };
 
+  const closeGroups = () => {
+    setSelectedSubject(null)
+    setSubjectGroups({})
+    setIsGroupsOpen(false)
+  }
+
   const deleteSubject = async (subject) => {
     if (window.confirm(`Вы уверены, что хотите удалить все группы предмета "${subject}"?`)) {
       try {
         const response = await scheduleApi.deleteSubject(subject);
         if (response.status === 'success') {
           fetchSubjects();
-          setSelectedSubject(null);
-          setSubjectGroups({});
+          closeGroups();
           toast.success(`Предмет "${subject}" успешно удален`);
         } else {
           toast.error(`Ошибка при удалении предмета "${subject}"`);
@@ -104,19 +112,10 @@ const ManagePredSubjectList = () => {
       <div className="container mt-4">
         {/* Header Section */}
         <div className="d-flex flex-column flex-lg-row justify-content-between gap-3 mb-4">
-          <button
-            onClick={() => navigate('/create-exam')}
-            className="btn btn-outline-red d-flex align-items-center gap-2 py-2"
-            style={{ color: '#C8102E', borderColor: '#C8102E' }}
-          >
-            <ArrowLeft size={20} />
-            Вернуться назад
-          </button>
 
-          <button
+        <button
             onClick={() => handleGenerate()}
-            className="btn btn-red text-white d-flex align-items-center gap-2 py-2 px-4"
-            style={{ color: '#C8102E', borderColor: '#C8102E' }}
+            className="btn btn-red d-flex  gap-2 py-2 px-4"
           >
             Сгенерировать
           </button>
@@ -144,13 +143,29 @@ const ManagePredSubjectList = () => {
         )}
 
         {/* Selected Subject Groups */}
-        {selectedSubject && subjectGroups && !loading && (
+        {isGroupsOpen && selectedSubject && subjectGroups && !loading && (
           <div className="card shadow-sm mb-4">
             <div className="card-header bg-white border-bottom p-4">
               <h2 className="h4 mb-0 d-flex align-items-center gap-2">
                 <BookOpen size={24} style={{ color: '#C8102E' }} />
                 Группы предмета "{selectedSubject}"
               </h2>
+
+              <button
+                onClick={closeGroups}
+                className="btn position-absolute top-0 end-0 m-3"
+                style={{ 
+                  zIndex: 1, 
+                  backgroundColor: '#C8102E', 
+                  width: '45px', 
+                  height: '35px', 
+                  display: 'flex', 
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                }}
+              >
+                <X size={25} color="white" /> {/* Белый цвет иконки */}
+              </button>
             </div>
             <div className="card-body p-4">
               {Object.entries(subjectGroups).map(([eduProgram, groups]) => (
@@ -176,7 +191,7 @@ const ManagePredSubjectList = () => {
                             <td className="py-3 text-end">
                               <button
                                 onClick={() => deleteSection(group.Section)}
-                                className="btn btn-outline-danger btn-sm d-inline-flex align-items-center gap-2"
+                                className="btn btn-red btn-sm d-inline-flex align-items-center gap-2"
                               >
                                 <Trash2 size={16} />
                                 Удалить секцию
@@ -222,16 +237,22 @@ const ManagePredSubjectList = () => {
                       <tr key={subject}>
                         <td className="py-3">{subject}</td>
                         <td className="py-3 text-end">
-                          <button
-                            onClick={() => fetchSubjectGroups(subject)}
-                            className="btn btn-outline-primary btn-sm me-2 d-inline-flex align-items-center gap-2"
+                        <button
+                            onClick={() => {
+                              if (selectedSubject === subject && isGroupsOpen) {
+                                closeGroups(); // Закрыть, если уже открыто
+                              } else {
+                                fetchSubjectGroups(subject); // Открыть и загрузить группы
+                              }
+                            }}
+                            className="btn btn-blue btn-sm me-2 d-inline-flex align-items-center gap-2"
                           >
                             <Eye size={16} />
-                            Просмотр групп
+                            {selectedSubject === subject && isGroupsOpen ? 'Закрыть' : 'Просмотр групп'}
                           </button>
                           <button
                             onClick={() => deleteSubject(subject)}
-                            className="btn btn-outline-danger btn-sm d-inline-flex align-items-center gap-2"
+                            className="btn btn-red btn-sm d-inline-flex align-items-center gap-2"
                           >
                             <Trash2 size={16} />
                             Удалить все группы

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react'; // Добавлен useCallback
 import { useParams, useNavigate } from 'react-router-dom';
 import { ArrowLeft, Download, Search, User, Calendar, Clock, BookOpen, Users, Hash, Building, CheckCircle } from 'lucide-react';
 import { toast } from 'react-toastify';
@@ -12,11 +12,8 @@ const ListOfStudentsCRN = () => {
   const { sectionId } = useParams();
   const navigate = useNavigate();
 
-  useEffect(() => {
-    fetchSectionInfo();
-  }, [sectionId]);
-
-  const fetchSectionInfo = async () => {
+  // Используем useCallback для стабилизации функции
+  const fetchSectionInfo = useCallback(async () => {
     try {
       const response = await fetch(`http://localhost:5000/section/${sectionId}`);
       if (!response.ok) throw new Error('Failed to fetch section info');
@@ -28,7 +25,11 @@ const ListOfStudentsCRN = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [sectionId]); // Зависимости useCallback
+
+  useEffect(() => {
+    fetchSectionInfo();
+  }, [sectionId, fetchSectionInfo]); // Добавлена fetchSectionInfo в зависимости
 
   const handleExport = async () => {
     try {
@@ -114,7 +115,7 @@ const ListOfStudentsCRN = () => {
             
             <button
               onClick={handleExport}
-              className="btn btn-red text-white d-flex align-items-center gap-2"
+              className="btn text-white d-flex align-items-center gap-2"
               style={{ backgroundColor: '#C8102E' }}
             >
               <Download size={20} />
