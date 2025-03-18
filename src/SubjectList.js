@@ -36,6 +36,16 @@ const SubjectList = () => {
     setLoading(true);
     try {
       const response = await fetch(`http://localhost:5000/subjects/${subject}/groups`);
+      
+      if (!response.ok) {
+        if (response.status === 404) {
+          closeGroups();
+          toast.info(`Группы для предмета "${subject}" не найдены`);
+          return;
+        }
+        throw new Error('Failed to fetch groups');
+      }
+      
       const data = await response.json();
       if (data.success) {
         setSubjectGroups(data.groups);
@@ -46,8 +56,9 @@ const SubjectList = () => {
     } catch (error) {
       console.error('Error fetching subject groups:', error);
       toast.error(`Ошибка при загрузке групп для предмета "${subject}"`);
+    } finally {
+      setLoading(false);
     }
-    setLoading(false);
   };
 
   const closeGroups = () => {
@@ -85,9 +96,23 @@ const SubjectList = () => {
           method: 'DELETE',
         });
         const data = await response.json();
+        
         if (data.success) {
-          fetchSubjectGroups(subject);
-          toast.success(`Секция "${section}" успешно удалена`);
+          // Проверяем остались ли секции у предмета
+          const groupsResponse = await fetch(`http://localhost:5000/subjects/${subject}/groups`);
+          
+          if (!groupsResponse.ok) {
+            // Если секций нет (404) - удаляем предмет
+            await fetch(`http://localhost:5000/subjects/${subject}/delete`, { method: 'DELETE' });
+            fetchSubjects(); // Обновляем список предметов
+            closeGroups(); // Закрываем окно групп
+            toast.success(`Предмет "${subject}" удален, так как секций больше нет`);
+          } else {
+            // Если секции остались - обновляем список
+            const groupsData = await groupsResponse.json();
+            setSubjectGroups(groupsData.groups);
+            toast.success(`Секция "${section}" успешно удалена`);
+          }
         } else {
           toast.error(`Ошибка при удалении секции "${section}"`);
         }

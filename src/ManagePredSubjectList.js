@@ -33,6 +33,15 @@ const ManagePredSubjectList = () => {
     setLoading(true);
     try {
       const response = await fetch(`http://localhost:5000/subjects/${subject}/groups`);
+      if (!response.ok) {
+        if (response.status === 404) {
+          // Если группы не найдены, закрываем список групп
+          closeGroups();
+          toast.info(`Группы для предмета "${subject}" не найдены`);
+          return;
+        }
+        throw new Error('Failed to fetch section info');
+      }
       const data = await response.json();
       if (data.success) {
         setSubjectGroups(data.groups);
@@ -41,9 +50,11 @@ const ManagePredSubjectList = () => {
         toast.success(`Группы для предмета "${subject}" успешно загружены`);
       }
     } catch (error) {
+      console.error('Error:', error);
       toast.error(`Ошибка при загрузке групп для предмета "${subject}"`);
+    } finally {
+      setLoading(false);
     }
-    setLoading(false);
   };
 
   const closeGroups = () => {
@@ -72,14 +83,29 @@ const ManagePredSubjectList = () => {
   const deleteSection = async (section) => {
     if (window.confirm(`Вы уверены, что хотите удалить секцию "${section}"?`)) {
       try {
+        // Удаляем секцию
         const response = await scheduleApi.deleteSection(section);
         if (response.status === 'success') {
-          fetchSubjectGroups(selectedSubject);
-          toast.success(`Секция "${section}" успешно удалена`);
+          // Проверяем, остались ли секции у предмета
+          const groupsResponse = await fetch(`http://localhost:5000/subjects/${selectedSubject}/groups`);
+          
+          if (!groupsResponse.ok) {
+            // Если секций нет (ошибка 404), удаляем предмет
+            await scheduleApi.deleteSubject(selectedSubject);
+            fetchSubjects(); // Обновляем список предметов
+            closeGroups(); // Закрываем окно с группами
+            toast.success(`Предмет "${selectedSubject}" удален, так как секций больше нет`);
+          } else {
+            // Если секции остались, обновляем их список
+            const data = await groupsResponse.json();
+            setSubjectGroups(data.groups);
+            toast.success(`Секция "${section}" успешно удалена`);
+          }
         } else {
           toast.error(`Ошибка при удалении секции "${section}"`);
         }
       } catch (error) {
+        console.error('Error:', error);
         toast.error(`Ошибка при удалении секции "${section}"`);
       }
     }
