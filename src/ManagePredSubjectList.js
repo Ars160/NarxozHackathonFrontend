@@ -6,14 +6,16 @@ import 'bootstrap/dist/css/bootstrap.min.css';
 import './style.css';
 import Navbar from './NavBar';
 import { scheduleApi } from './Api';
+import { GlobalLoader, LocalLoader } from './Loaderss';
 
 const ManagePredSubjectList = () => {
   const [subjects, setSubjects] = useState([]);
   const [selectedSubject, setSelectedSubject] = useState(null);
   const [subjectGroups, setSubjectGroups] = useState({});
-  const [loading, setLoading] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [isGroupsOpen, setIsGroupsOpen] = useState(false);
+  const [groupsLoading, setGroupsLoading] = useState(false);
+  const [scheduleLoading, setScheduleLoading] = useState(false);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -30,7 +32,7 @@ const ManagePredSubjectList = () => {
   };
 
   const fetchSubjectGroups = async (subject) => {
-    setLoading(true);
+    setGroupsLoading(true);
     try {
       const response = await fetch(`http://localhost:5000/subjects/${subject}/groups`);
       if (!response.ok) {
@@ -53,7 +55,7 @@ const ManagePredSubjectList = () => {
       console.error('Error:', error);
       toast.error(`Ошибка при загрузке групп для предмета "${subject}"`);
     } finally {
-      setLoading(false);
+      setGroupsLoading(false);
     }
   };
 
@@ -112,6 +114,7 @@ const ManagePredSubjectList = () => {
   };
 
   const handleGenerate = async () => {
+    setScheduleLoading(true)
     try {
       const response = await scheduleApi.generateSchedule();
       if (response.status === 'success') {
@@ -124,6 +127,8 @@ const ManagePredSubjectList = () => {
       toast.error('Ошибка при генерации расписания');
       console.log(error);
       
+    } finally {
+      setScheduleLoading(false)
     }
   };
 
@@ -131,11 +136,20 @@ const ManagePredSubjectList = () => {
     subject.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
+  useEffect(() => {
+    if (scheduleLoading) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = 'auto';
+    }
+  }, [scheduleLoading]);
+
   return (
-    <div className="container-fluid p-0 min-vh-100">
+    <div className={`container-fluid p-0 min-vh-100 ${scheduleLoading ? 'disabled-page' : ''}`}>
       <Navbar showFilterButton={false} />
 
       <div className="container mt-4">
+      {scheduleLoading && <GlobalLoader />} 
         {/* Header Section */}
         <div className="d-flex flex-column flex-lg-row justify-content-between gap-3 mb-4">
 
@@ -160,16 +174,10 @@ const ManagePredSubjectList = () => {
         </div>
 
         {/* Loading Indicator */}
-        {loading && (
-          <div className="d-flex justify-content-center p-4">
-            <div className="spinner-border text-red" role="status" style={{ color: '#C8102E' }}>
-              <span className="visually-hidden">Загрузка...</span>
-            </div>
-          </div>
-        )}
+        {groupsLoading && <LocalLoader />}
 
         {/* Selected Subject Groups */}
-        {isGroupsOpen && selectedSubject && subjectGroups && !loading && (
+        {isGroupsOpen && selectedSubject && subjectGroups && !groupsLoading && (
           <div className="card shadow-sm mb-4">
             <div className="card-header bg-white border-bottom p-4">
               <h2 className="h4 mb-0 d-flex align-items-center gap-2">

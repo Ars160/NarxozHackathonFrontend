@@ -5,14 +5,17 @@ import { ArrowLeft, Search, Trash2, Eye, BookOpen, GraduationCap, Users, X} from
 import 'bootstrap/dist/css/bootstrap.min.css';
 import './style.css';
 import Navbar from './NavBar';
+import { GlobalLoader, LocalLoader } from './Loaderss';
+
 
 const SubjectList = () => {
   const [subjects, setSubjects] = useState([]);
   const [selectedSubject, setSelectedSubject] = useState(null);
   const [subjectGroups, setSubjectGroups] = useState({});
-  const [loading, setLoading] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [isGroupsOpen, setIsGroupsOpen] = useState(false);
+  const [groupsLoading, setGroupsLoading] = useState(false);
+  const [scheduleLoading, setScheduleLoading] = useState(false);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -33,7 +36,7 @@ const SubjectList = () => {
   };
 
   const fetchSubjectGroups = async (subject) => {
-    setLoading(true);
+    setGroupsLoading(true);
     try {
       const response = await fetch(`http://localhost:5000/subjects/${subject}/groups`);
       
@@ -57,7 +60,7 @@ const SubjectList = () => {
       console.error('Error fetching subject groups:', error);
       toast.error(`Ошибка при загрузке групп для предмета "${subject}"`);
     } finally {
-      setLoading(false);
+      setGroupsLoading(false);
     }
   };
 
@@ -69,6 +72,7 @@ const SubjectList = () => {
 
   const deleteSubject = async (subject) => {
     if (window.confirm(`Вы уверены, что хотите удалить все группы предмета "${subject}"?`)) {
+      setScheduleLoading(true)
       try {
         const response = await fetch(`http://localhost:5000/subjects/${subject}/delete`, {
           method: 'DELETE',
@@ -85,12 +89,15 @@ const SubjectList = () => {
       } catch (error) {
         console.error('Error deleting subject:', error);
         toast.error(`Ошибка при удалении предмета "${subject}"`);
+      } finally {
+        setScheduleLoading(false)
       }
     }
   };
 
   const deleteSection = async (subject, section) => {
     if (window.confirm(`Вы уверены, что хотите удалить секцию "${section}"?`)) {
+      setScheduleLoading(true)
       try {
         const response = await fetch(`http://localhost:5000/subjects/${subject}/sections/${section}`, {
           method: 'DELETE',
@@ -119,6 +126,8 @@ const SubjectList = () => {
       } catch (error) {
         console.error('Error deleting section:', error);
         toast.error(`Ошибка при удалении секции "${section}"`);
+      } finally {
+        setScheduleLoading(false)
       }
     }
   };
@@ -127,11 +136,20 @@ const SubjectList = () => {
     subject.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
-  return (
-    <div className="container-fluid p-0 min-vh-100">
-      <Navbar showFilterButton={false} />
+  useEffect(() => {
+      if (scheduleLoading) {
+        document.body.style.overflow = 'hidden';
+      } else {
+        document.body.style.overflow = 'auto';
+      }
+    }, [scheduleLoading]);
 
+  return (
+    <div className={`container-fluid p-0 min-vh-100 ${scheduleLoading ? 'disabled-page' : ''}`}>
+      <Navbar showFilterButton={false} />
+      {scheduleLoading && <GlobalLoader />} 
       <div className="container mt-4">
+        
         {/* Header Section */}
         <div className="d-flex flex-column flex-lg-row justify-content-between gap-3 mb-4">
           <button
@@ -157,16 +175,10 @@ const SubjectList = () => {
         </div>
 
         {/* Loading Indicator */}
-        {loading && (
-          <div className="d-flex justify-content-center p-4">
-            <div className="spinner-border text-red" role="status" style={{ color: '#C8102E' }}>
-              <span className="visually-hidden">Загрузка...</span>
-            </div>
-          </div>
-        )}
+        {groupsLoading && <LocalLoader />}
 
         {/* Selected Subject Groups */}
-        {isGroupsOpen && selectedSubject && subjectGroups && !loading && (
+        {isGroupsOpen && selectedSubject && subjectGroups && !groupsLoading && (
           <div className="card shadow-sm mb-4">
             <div className="card-header bg-white border-bottom p-4">
               <h2 className="h4 mb-0 d-flex align-items-center gap-2">

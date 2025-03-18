@@ -220,3 +220,37 @@ body {
   border: 1px solid #664cda;
 }
 
+/* Блокировка всей страницы */
+.disabled-page {
+  position: fixed;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+}
+
+.global-loader {
+  position: fixed; /* Меняем absolute на fixed */
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(255, 255, 255, 0.9);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 9999;
+  pointer-events: none; /* Разрешаем клики через лоадер */
+}
+
+/* Блокировка взаимодействия с контентом */
+.disabled-page::after {
+  content: '';
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: transparent;
+  z-index: 9998;
+  pointer-events: all; /* Блокируем взаимодействие */
+}
