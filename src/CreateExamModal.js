@@ -1,9 +1,12 @@
 import React, { useState } from 'react';
-import { Modal, Button, Form } from 'react-bootstrap';
+import { Modal, Button, Form, Spinner } from 'react-bootstrap';
 import { scheduleApi } from './Api';
 import { useNavigate } from 'react-router-dom';
+import { toast } from 'react-toastify';
+
 
 const CreateExamModal = ({ show, onClose, onSave }) => {
+  const [isLoading, setIsLoading] = useState(false);
   const [name, setName] = useState('')
   const [fileExams, setFileExams] = useState(null);
   const [fileRooms, setFileRooms] = useState(null);
@@ -13,6 +16,7 @@ const CreateExamModal = ({ show, onClose, onSave }) => {
   const navigate = useNavigate();
 
   const handleSubmit = async () => {
+    setIsLoading(true)
     const formData = new FormData();
     formData.append('title', name);
     formData.append('exams', fileExams);
@@ -25,18 +29,43 @@ const CreateExamModal = ({ show, onClose, onSave }) => {
       const newExam = await scheduleApi.createExam(formData);
       onSave(newExam);
       onClose();
+      toast.success('Экзамен успешно создан!');
       navigate('/manage-subject-list')
     } catch (err) {
       console.error('Ошибка при создании экзамена', err);
+      toast.error('Ошибка при создании экзамена');
+    } finally {
+      setIsLoading(false)
     }
+  };
+
+  const loadingOverlayStyle = {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: 'rgba(255, 255, 255, 0.8)',
+    color: '#C8102E',
+    display: 'flex',
+    justifyContent: 'center',
+    alignItems: 'center',
+    zIndex: 1000,
   };
 
   return (
     <Modal show={show} onHide={onClose}>
-      <Modal.Header closeButton>
+      <Modal.Header closeButton style={{ backgroundColor: '#C8102E', color: 'white' }}>
         <Modal.Title>Создать новый экзамен</Modal.Title>
       </Modal.Header>
       <Modal.Body>
+        {isLoading && (
+          <div style={loadingOverlayStyle}>
+          <Spinner animation="border" role="status">
+            <span className="visually-hidden">Загрузка...</span>
+          </Spinner>
+        </div>
+        )}
         <Form>
         <Form.Group controlId="formName" className="mb-2">
             <Form.Label>Название Экзамена</Form.Label>
@@ -65,10 +94,10 @@ const CreateExamModal = ({ show, onClose, onSave }) => {
         </Form>
       </Modal.Body>
       <Modal.Footer>
-        <Button variant="secondary" onClick={onClose}>
+        <Button variant="secondary" onClick={onClose} disabled={isLoading}>
           Отмена
         </Button>
-        <Button variant="primary" onClick={handleSubmit}>
+        <Button variant="primary" onClick={handleSubmit} disabled={isLoading}>
           Создать
         </Button>
       </Modal.Footer>
