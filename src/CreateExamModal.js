@@ -4,15 +4,17 @@ import { scheduleApi } from './Api';
 import { useNavigate } from 'react-router-dom';
 
 const CreateExamModal = ({ show, onClose, onSave }) => {
+  const [name, setName] = useState('')
   const [fileExams, setFileExams] = useState(null);
   const [fileRooms, setFileRooms] = useState(null);
   const [fileFaculties, setFileFaculties] = useState(null);
   const [startDate, setStartDate] = useState('');
-  const [numDays, setNumDays] = useState(14);
+  const [numDays, setNumDays] = useState();
   const navigate = useNavigate();
 
   const handleSubmit = async () => {
     const formData = new FormData();
+    formData.append('title', name);
     formData.append('exams', fileExams);
     formData.append('rooms', fileRooms);
     formData.append('faculties', fileFaculties);
@@ -36,6 +38,10 @@ const CreateExamModal = ({ show, onClose, onSave }) => {
       </Modal.Header>
       <Modal.Body>
         <Form>
+        <Form.Group controlId="formName" className="mb-2">
+            <Form.Label>Название Экзамена</Form.Label>
+            <Form.Control type="text" onChange={(e) => setName(e.target.value)} />
+          </Form.Group>
           <Form.Group controlId="formFileExams" className="mb-3">
             <Form.Label>Файл с экзаменами</Form.Label>
             <Form.Control type="file" onChange={(e) => setFileExams(e.target.files[0])} />
@@ -48,11 +54,11 @@ const CreateExamModal = ({ show, onClose, onSave }) => {
             <Form.Label>Файл с факультетами</Form.Label>
             <Form.Control type="file" onChange={(e) => setFileFaculties(e.target.files[0])} />
           </Form.Group>
-          <Form.Group controlId="formStartDate" className="mb-3">
+          <Form.Group controlId="formStartDate" className="mb-2">
             <Form.Label>Дата начала</Form.Label>
             <Form.Control type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)} />
           </Form.Group>
-          <Form.Group controlId="formNumDays" className="mb-3">
+          <Form.Group controlId="formNumDays" className="mb-2">
             <Form.Label>Количество дней</Form.Label>
             <Form.Control type="number" value={numDays} onChange={(e) => setNumDays(e.target.value)} />
           </Form.Group>
