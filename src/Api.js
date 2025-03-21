@@ -82,6 +82,26 @@ export const scheduleApi = {
       throw error;
     }
   },
+
+  manageDates: async (action, dateData) => {
+    try {
+      const response = await fetch(`${BASE_URL}/api/manage_dates`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ action, ...dateData }),
+      });
+      if (!response.ok) {
+        throw new Error('Network response was not ok');
+      }
+      return await response.json();
+    } catch (error) {
+      console.error('Error managing dates:', error);
+      throw error;
+    }
+  },
+  
   getSubjects: async () => {
     try {
       const response = await fetch(`${BASE_URL}/api/manage`, {
@@ -186,7 +206,7 @@ export const scheduleApi = {
       return await response.json();
     } catch (error){
       console.error('Error fetching exams sessions:', error);
-      
+      throw error;
     }
   },
 
@@ -201,6 +221,70 @@ export const scheduleApi = {
       return await response.json();
     } catch (error) {
       console.error('Error deleting session:', error);
+      throw error;
+    }
+  },
+
+  // New date management functions
+  removeDate: async (date) => {
+    try {
+      const response = await fetch(`${BASE_URL}/api/manage_dates`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ 
+          action: 'remove',
+          date: date 
+        }),
+      });
+      if (!response.ok) {
+        throw new Error('Network response was not ok');
+      }
+      return await response.json();
+    } catch (error) {
+      console.error('Error removing date:', error);
+      throw error;
+    }
+  },
+
+  addCustomDate: async (date) => {
+    try {
+      const response = await fetch(`${BASE_URL}/api/manage_dates`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ 
+          action: 'add_custom',
+          custom_date: date 
+        }),
+      });
+      if (!response.ok) {
+        throw new Error('Network response was not ok');
+      }
+      return await response.json();
+    } catch (error) {
+      console.error('Error adding custom date:', error);
+      throw error;
+    }
+  },
+
+  restoreDates: async () => {
+    try {
+      const response = await fetch(`${BASE_URL}/api/manage_dates`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ action: 'restore' }),
+      });
+      if (!response.ok) {
+        throw new Error('Network response was not ok');
+      }
+      return await response.json();
+    } catch (error) {
+      console.error('Error restoring dates:', error);
       throw error;
     }
   },
