@@ -161,4 +161,47 @@ export const scheduleApi = {
       throw error;
     }
   },
+
+  // -------------------------------------CreateExamPage---------------------------------------------
+
+  getSessions: async() => {
+    try{
+      const response = await fetch(`${BASE_URL}/api/sessions`);
+      if(!response.ok)
+        throw new Error('Network response was not ok');
+      return await response.json();
+    } catch (error) {
+      console.error('Error fetching exams sessions:', error);
+      throw error;
+    }
+  },
+
+  activateSession: async(sessionId) => {
+    try{
+      const response = await fetch(`${BASE_URL}/api/sessions/${sessionId}/activate`, {
+        method: 'POST',
+      });
+      if(!response.ok)
+        throw new Error('Network response was not ok')
+      return await response.json();
+    } catch (error){
+      console.error('Error fetching exams sessions:', error);
+      
+    }
+  },
+
+  deleteSession: async (sessionId) => {
+    try {
+      const response = await fetch(`${BASE_URL}/api/sessions/${sessionId}`, {
+        method: 'DELETE',
+      });
+      if (!response.ok) {
+        throw new Error('Network response was not ok');
+      }
+      return await response.json();
+    } catch (error) {
+      console.error('Error deleting session:', error);
+      throw error;
+    }
+  },
 };

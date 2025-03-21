@@ -98,29 +98,38 @@ const ExamScheduler = () => {
   };
 
   const fetchScheduleData = useCallback(async () => {
+    const schedulePromise = scheduleApi.getGeneralSchedule()
+      .then(data => {
+        const sanitizedData = data.map(item => {
+          const newItem = { ...item };
+          Object.keys(newItem).forEach(key => {
+            if (typeof newItem[key] === 'number' && isNaN(newItem[key])) {
+              newItem[key] = null;
+            }
+          });
+          return newItem;
+        });
+  
+        setScheduleData(sanitizedData);
+        setFilteredData(sanitizedData);
+      });
+  
+    toast.promise(schedulePromise, {
+      pending: "Загрузка расписания...",
+      success: "Расписание успешно загружено",
+      error: "Ошибка при загрузке расписания"
+    });
+  
     try {
       setLoading(true);
-      const data = await scheduleApi.getGeneralSchedule();
-      const sanitizedData = data.map(item => {
-        const newItem = {...item};
-        Object.keys(newItem).forEach(key => {
-          if (typeof newItem[key] === 'number' && isNaN(newItem[key])) {
-            newItem[key] = null;
-          }
-        });
-        return newItem;
-      });
-      
-      setScheduleData(sanitizedData);
-      setFilteredData(sanitizedData);
-      toast.success('Расписание успешно загружено');
+      await schedulePromise;
     } catch (err) {
-      toast.error('Ошибка при загрузке расписания');
       console.error(err);
     } finally {
       setLoading(false);
     }
   }, []);
+  
 
   const fetchStudentSchedule = useCallback(async (id) => {
     if (!id.trim()) {

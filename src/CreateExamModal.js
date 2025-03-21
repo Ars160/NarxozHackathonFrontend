@@ -5,7 +5,7 @@ import { useNavigate } from 'react-router-dom';
 import { toast } from 'react-toastify';
 
 
-const CreateExamModal = ({ show, onClose, onSave }) => {
+const CreateExamModal = ({ show, onClose}) => {
   const [isLoading, setIsLoading] = useState(false);
   const [name, setName] = useState('')
   const [fileExams, setFileExams] = useState(null);
@@ -26,11 +26,14 @@ const CreateExamModal = ({ show, onClose, onSave }) => {
     formData.append('num_days', numDays);
 
     try {
-      const newExam = await scheduleApi.createExam(formData);
-      onSave(newExam);
+      await scheduleApi.createExam(formData);
       onClose();
-      toast.success('Экзамен успешно создан!');
-      navigate('/manage-subject-list')
+      navigate('/manage-subject-list', {
+        state: {
+          message: `Экзамен успешно создан!`,
+          type: 'success',
+        },
+      });
     } catch (err) {
       console.error('Ошибка при создании экзамена', err);
       toast.error('Ошибка при создании экзамена');
