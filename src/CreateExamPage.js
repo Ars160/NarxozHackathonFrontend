@@ -103,8 +103,8 @@ const CreateExamPage = () => {
                   {sessions.length > 0 ? (
                     sessions.map((session) => (
                       <tr key={session.created_at}>
-                        <td>{session.title}</td>
-                        <td>
+                        <td data-label="Название">{session.title}</td>
+                        <td data-label="Дата создания">
                           {new Date(session.created_at).toLocaleString('ru-RU', {
                             timeZone: 'UTC',
                             day: '2-digit',
@@ -115,10 +115,10 @@ const CreateExamPage = () => {
                             hour12: false
                           })}
                         </td>
-                        <td>{new Date(session.start_date).toLocaleDateString()}</td>
-                        <td>{session.days}</td>
+                        <td data-label="Дата начала">{new Date(session.start_date).toLocaleDateString()}</td>
+                        <td data-label="Период проведения">{session.days}</td>
                         
-                        <td>
+                        <td data-label="Активация">
                           <button
                            onClick={() => handleActiveSession(session.id,session.title)}
                             className="btn btn-blue btn-sm d-inline-flex align-items-center"
@@ -127,7 +127,7 @@ const CreateExamPage = () => {
                             <span>Вход</span>
                           </button>
                         </td>
-                        <td>
+                        <td data-label="Действия">
                           <button
                             onClick={() => deleteSession(session.id, session.title)}
                             className="btn btn-red btn-sm d-inline-flex align-items-center"
