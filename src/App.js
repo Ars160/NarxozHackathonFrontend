@@ -30,7 +30,7 @@ const ExamScheduler = () => {
 
   const onResetFilters = () => {
     setFilterCriteria({
-      subject: '',
+    subject: '',
     instructor: '',
     section: '',
     room: '',
@@ -45,47 +45,60 @@ const ExamScheduler = () => {
     toast.info(`ВХОД В CRN ${examData.Section}`);
     navigate(`/section/${examData.Section}`);
   }, [navigate]);
+// Функция, убирающая всё в круглых скобках и разбивающая по "+"
+const parseRoomString = (roomString) => {
+  if (!roomString) return [];
+  
+  let cleaned = roomString.replace(/\(.*?\)/g, '');
+  return cleaned.split('+').map(str => str.trim());
+};
 
-// Если exam.Room — это просто строка
-function matchesRoom(examRoom, filterValue) {
-  // Если фильтр пустой, не ограничиваем по аудитории
+// Функция для проверки, совпадает ли аудитория (обёрнута в useCallback)
+const matchesRoom = useCallback((roomString, filterValue) => {
   if (!filterValue) return true;
-  // Проверяем, есть ли подстрока filterValue в строке examRoom
-  return examRoom.toLowerCase().includes(filterValue.toLowerCase());
-}
+  const splittedRooms = parseRoomString(roomString);
+  return splittedRooms.some(room => room.toLowerCase().includes(filterValue.toLowerCase()));
+}, []);
+
+const formatDate = useCallback((dateString) => new Date(dateString).toLocaleDateString('ru-RU'), []);
+
+const filterData = useCallback((data) => {
+  return data.filter(exam => {
+    // Фильтр по аудитории
+    const roomValue = filterCriteria.room.trim();
+    const isRoomMatch = matchesRoom(exam.Room || '', roomValue);
+
+    // Фильтр по времени
+    const timeFilter = filterCriteria.time.trim();
+    const matchesTime = exam.Time_Slot.toLowerCase().includes(timeFilter.toLowerCase());
+
+    // Фильтр по проктору
+    const proctorFilter = filterCriteria.proctor.trim();
+    const proctorValue = exam.Proctor ? exam.Proctor.toString().toLowerCase() : '';
+    const matchesProctor = !proctorFilter || proctorValue.includes(proctorFilter);
+
+    // Фильтр по предмету, преподавателю и секции
+    const matchesSubject = exam.Subject.toLowerCase().includes(filterCriteria.subject.trim().toLowerCase());
+    const matchesInstructor = exam.Instructor.toLowerCase().includes(filterCriteria.instructor.trim().toLowerCase());
+    const matchesSection = exam.Section.toLowerCase().includes(filterCriteria.section.trim().toLowerCase());
+
+    // Фильтр по дате (если указана)
+    const matchesDate = !filterCriteria.date || exam.Date.includes(filterCriteria.date);
+
+    return (
+      matchesSubject &&
+      matchesInstructor &&
+      matchesSection &&
+      matchesProctor &&
+      matchesDate &&
+      matchesTime &&
+      isRoomMatch
+    );
+  });
+}, [filterCriteria, matchesRoom]); // Добавили matchesRoom в зависимости
 
 
-
-  const formatDate = useCallback((dateString) => new Date(dateString).toLocaleDateString('ru-RU'), []);
-
-  const filterData = useCallback((data) => {
-    return data.filter(exam => {
-      // 1) Получаем значение, введённое в фильтр по аудитории
-      const roomValue = filterCriteria.room.toLowerCase().trim();
-      // 2) Проверяем, подходит ли аудитория
-      // Предположим, что exam.Room — это строка
-      const isRoomMatch = matchesRoom(exam.Room || '', roomValue);
   
-      // Аналогично можно оставить вашу логику для time/proctor и т.д.
-      const timeFilter = filterCriteria.time.toLowerCase().trim();
-      const matchesTime = exam.Time_Slot.toLowerCase().includes(timeFilter);
-  
-      const proctorFilter = filterCriteria.proctor.toLowerCase().trim();
-      const proctorValue = exam.Proctor ? exam.Proctor.toString().toLowerCase() : '';
-      const matchesProctor = !proctorFilter || proctorValue.includes(proctorFilter);
-  
-      // Возвращаем true, только если все условия совпали
-      return (
-        exam.Subject.toLowerCase().includes(filterCriteria.subject.toLowerCase().trim()) &&
-        exam.Instructor.toLowerCase().includes(filterCriteria.instructor.toLowerCase().trim()) &&
-        exam.Section.toLowerCase().includes(filterCriteria.section.toLowerCase().trim()) &&
-        matchesProctor &&
-        (filterCriteria.date === '' || exam.Date.includes(filterCriteria.date)) &&
-        matchesTime &&
-        isRoomMatch
-      );
-    });
-  }, [filterCriteria]);
   
 
   const sortData = useCallback((data, key) => {
