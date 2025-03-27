@@ -46,33 +46,47 @@ const ExamScheduler = () => {
     navigate(`/section/${examData.Section}`);
   }, [navigate]);
 
+// Если exam.Room — это просто строка
+function matchesRoom(examRoom, filterValue) {
+  // Если фильтр пустой, не ограничиваем по аудитории
+  if (!filterValue) return true;
+  // Проверяем, есть ли подстрока filterValue в строке examRoom
+  return examRoom.toLowerCase().includes(filterValue.toLowerCase());
+}
+
+
+
   const formatDate = useCallback((dateString) => new Date(dateString).toLocaleDateString('ru-RU'), []);
 
   const filterData = useCallback((data) => {
     return data.filter(exam => {
+      // 1) Получаем значение, введённое в фильтр по аудитории
+      const roomValue = filterCriteria.room.toLowerCase().trim();
+      // 2) Проверяем, подходит ли аудитория
+      // Предположим, что exam.Room — это строка
+      const isRoomMatch = matchesRoom(exam.Room || '', roomValue);
+  
+      // Аналогично можно оставить вашу логику для time/proctor и т.д.
       const timeFilter = filterCriteria.time.toLowerCase().trim();
       const matchesTime = exam.Time_Slot.toLowerCase().includes(timeFilter);
   
-      const roomValue = filterCriteria.room.trim();
-      const matchesRoom = roomValue 
-        ? exam.Room.toString() === roomValue
-        : true;
-      
       const proctorFilter = filterCriteria.proctor.toLowerCase().trim();
       const proctorValue = exam.Proctor ? exam.Proctor.toString().toLowerCase() : '';
-      const matchesProctor = proctorFilter === '' || proctorValue.includes(proctorFilter);
+      const matchesProctor = !proctorFilter || proctorValue.includes(proctorFilter);
   
+      // Возвращаем true, только если все условия совпали
       return (
         exam.Subject.toLowerCase().includes(filterCriteria.subject.toLowerCase().trim()) &&
         exam.Instructor.toLowerCase().includes(filterCriteria.instructor.toLowerCase().trim()) &&
         exam.Section.toLowerCase().includes(filterCriteria.section.toLowerCase().trim()) &&
-        matchesRoom &&
         matchesProctor &&
         (filterCriteria.date === '' || exam.Date.includes(filterCriteria.date)) &&
-        matchesTime
+        matchesTime &&
+        isRoomMatch
       );
     });
   }, [filterCriteria]);
+  
 
   const sortData = useCallback((data, key) => {
     const direction = sortConfig.key === key && sortConfig.direction === 'ascending' ? 'descending' : 'ascending';

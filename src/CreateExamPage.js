@@ -25,6 +25,7 @@ const CreateExamPage = () => {
   const fetchSessions = useCallback(async () => {
       try {
         const data = await scheduleApi.getSessions();
+        console.log(data);
         setSessions(data);
         toast.success('Сессии успешно загружено');
       } catch (err) {
@@ -33,9 +34,9 @@ const CreateExamPage = () => {
       }
     }, []);
 
-  const handleActiveSession = useCallback(async (session_id,title) => {
+  const handleActiveSession = useCallback(async (sessionId) => {
     try {
-      await scheduleApi.activateSession(2);
+      await scheduleApi.activateSession(sessionId);
       navigate('/');
     } catch (err) {
       toast.error('Ошибка при активации сессии');
@@ -46,7 +47,7 @@ const CreateExamPage = () => {
   const deleteSession = useCallback(async (sessionId, title) => {
     if (window.confirm('Вы уверены, что хотите удалить эту сессию?')) {
       try {
-        await scheduleApi.deleteSession(1);
+        await scheduleApi.deleteSession(sessionId);
         toast.success(`Сессия ${title} успешно удалена`);
         fetchSessions();
       } catch (err) {
@@ -120,7 +121,7 @@ const CreateExamPage = () => {
                         
                         <td data-label="Активация">
                           <button
-                           onClick={() => handleActiveSession(session.id,session.title)}
+                           onClick={() => handleActiveSession(session.id)}
                             className="btn btn-blue btn-sm d-inline-flex align-items-center"
                           >
                             <LogIn size={16} className="me-1" />
@@ -140,7 +141,7 @@ const CreateExamPage = () => {
                     ))
                   ) : (
                     <tr>
-                    <td colSpan="4" className="text-center py-4 text-muted">
+                    <td colSpan="6" className="text-center py-4 text-muted">
                       <div className="d-flex flex-column align-items-center">
                         <span className="h5 mb-3">&#128533;</span>
                         Нет данных для отображения
