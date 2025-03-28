@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Modal, Button, Form, Spinner } from 'react-bootstrap';
-import { scheduleApi } from './Api';
+import { scheduleApi } from '../services/Api';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'react-toastify';
 import ManageDatesModal from './ManageDatesModal';

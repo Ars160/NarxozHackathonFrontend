@@ -1,10 +1,10 @@
 import { useCallback, useEffect, useState } from 'react';
 import 'bootstrap/dist/css/bootstrap.min.css';
-import './style.css';
+import '../styles/style.css';
 import Navbar from './NavBar';
 import { ClipboardList, LogIn, Trash2 } from 'lucide-react';
 import CreateExamModal from './CreateExamModal';
-import { scheduleApi } from './Api';
+import { scheduleApi } from '../services/Api';
 import { toast } from 'react-toastify';
 import { useNavigate } from 'react-router-dom';
 

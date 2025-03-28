@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { toast } from 'react-toastify';
 import { ArrowLeft, Search, Trash2, Eye, BookOpen, GraduationCap, Users, X} from 'lucide-react';
 import 'bootstrap/dist/css/bootstrap.min.css';
-import './style.css';
+import '../styles/style.css';
 import Navbar from './NavBar';
 import { GlobalLoader, LocalLoader } from './Loaderss';
 

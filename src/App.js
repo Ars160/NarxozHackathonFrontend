@@ -3,10 +3,10 @@ import { useNavigate } from 'react-router-dom';
 import { Calendar, Search, User, Download, ArrowUpDown, LogIn, Filter, EditIcon} from 'lucide-react';
 import { toast } from 'react-toastify';
 import 'bootstrap/dist/css/bootstrap.min.css';
-import { scheduleApi } from './Api';
-import './style.css';
-import Navbar from './NavBar';
-import EditExamModal from './EditExamModal';
+import { scheduleApi } from './services/Api';
+import './styles/style.css';
+import Navbar from './components/NavBar';
+import EditExamModal from './components/EditExamModal';
 
 const ExamScheduler = () => {
   const [scheduleData, setScheduleData] = useState([]);
@@ -45,6 +45,7 @@ const ExamScheduler = () => {
     toast.info(`ВХОД В CRN ${examData.Section}`);
     navigate(`/section/${examData.Section}`);
   }, [navigate]);
+
 // Функция, убирающая всё в круглых скобках и разбивающая по "+"
 const parseRoomString = (roomString) => {
   if (!roomString) return [];

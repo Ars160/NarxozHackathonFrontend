@@ -1,6 +1,7 @@
 import React from 'react';
 import LoadingSpinner from './LoadingSpinner';
-import './style.css'
+import '../styles/style.css';
+
 
 export const GlobalLoader = () => (
     <div className="global-loader">

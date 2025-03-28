@@ -3,9 +3,9 @@ import { useNavigate } from 'react-router-dom';
 import { toast } from 'react-toastify';
 import { Search, Trash2, Eye, BookOpen, GraduationCap, Users, X } from 'lucide-react';
 import 'bootstrap/dist/css/bootstrap.min.css';
-import './style.css';
+import '../styles/style.css';
 import Navbar from './NavBar';
-import { scheduleApi } from './Api';
+import { scheduleApi } from '../services/Api';
 import { GlobalLoader, LocalLoader } from './Loaderss';
 
 const ManagePredSubjectList = () => {
