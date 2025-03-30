@@ -1,6 +1,8 @@
 import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { User, Lock, Mail } from 'lucide-react';
+import '../styles/auth.css'; 
+
 
 const Register = () => {
   const [fullName, setFullName] = useState('');
@@ -100,7 +102,7 @@ const Register = () => {
 
                   <button 
                     type="submit" 
-                    className="btn btn-red w-100 py-2 fw-bold text-white"
+                    className="btn btn-red w-100 py-2 fw-bold "
                   >
                     Зарегистрироваться
                   </button>

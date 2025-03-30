@@ -18,7 +18,6 @@ root.render(
         <Routes>
             <Route path="/login" element={<Login />} />
             <Route path="/register" element={<Register />} />
-            {/* Защищённые маршруты */}
             <Route
                 path="/"
                 element={

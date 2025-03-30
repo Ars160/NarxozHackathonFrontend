@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { Lock, Mail} from 'lucide-react';
+import '../styles/auth.css' 
 
 
 
@@ -84,7 +85,7 @@ const Login = () => {
 
                   <button 
                     type="submit" 
-                    className="btn btn-red w-100 py-2 fw-bold text-white"
+                    className="btn btn-red w-100 py-2 fw-bold "
                   >
                     Войти
                   </button>
