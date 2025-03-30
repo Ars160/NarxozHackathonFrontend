@@ -1,39 +1,39 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Modal, Button, Form, Spinner } from 'react-bootstrap';
 import { Calendar, X, Plus, RotateCcw } from 'lucide-react';
 import { toast } from 'react-toastify';
+import { scheduleApi } from '../services/Api';
+
 
 const ManageDatesModal = ({ show, onClose, dates, onComplete }) => {
   const [isLoading, setIsLoading] = useState(false);
   const [selectedDates, setSelectedDates] = useState([]);
   const [customDate, setCustomDate] = useState('');
-  
+
+  // Функция для сортировки дат с использованием useCallback
+  const sortDates = useCallback((dates) => {
+    return [...dates].sort((a, b) => new Date(a) - new Date(b));
+  }, []);
+
+  // Обновление состояния с сортировкой с использованием useCallback
+  const updateDatesWithSort = useCallback((newDates) => {
+    const sortedDates = sortDates(newDates);
+    setSelectedDates(sortedDates);
+  }, [sortDates]);
+
   useEffect(() => {
     if (dates) {
-      setSelectedDates(dates);
+      updateDatesWithSort(dates);
     }
-  }, [dates]);
+  }, [dates, updateDatesWithSort]);
 
   const handleRemoveDate = async (dateToRemove) => {
     setIsLoading(true);
     try {
-      const response = await fetch('http://localhost:5000/api/manage_dates', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ 
-          action: 'remove',
-          date: dateToRemove 
-        }),
-      });
-      
-      if (!response.ok) {
-        throw new Error('Failed to remove date');
-      }
-      
-      const data = await response.json();
-      setSelectedDates(data.dates);
+      const response = await scheduleApi.removeDate(dateToRemove); // Добавлен await
+      // Убрана ручная проверка response.ok, так как ошибки перехватываются catch
+      const data = response; // response уже является результатом await
+      updateDatesWithSort(data.dates || []);
       toast.success(`Дата ${dateToRemove} успешно удалена`);
     } catch (error) {
       console.error('Error removing date:', error);
@@ -42,7 +42,7 @@ const ManageDatesModal = ({ show, onClose, dates, onComplete }) => {
       setIsLoading(false);
     }
   };
-
+  
   const handleAddCustomDate = async () => {
     if (!customDate) {
       toast.warning('Выберите дату для добавления');
@@ -51,23 +51,9 @@ const ManageDatesModal = ({ show, onClose, dates, onComplete }) => {
     
     setIsLoading(true);
     try {
-      const response = await fetch('http://localhost:5000/api/manage_dates', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ 
-          action: 'add_custom',
-          custom_date: customDate 
-        }),
-      });
-      
-      if (!response.ok) {
-        throw new Error('Failed to add date');
-      }
-      
-      const data = await response.json();
-      setSelectedDates(data.dates);
+      const response = await scheduleApi.addCustomDate(customDate); // Добавлен await
+      const data = response;
+      updateDatesWithSort(data.dates);
       setCustomDate('');
       toast.success(`Дата ${customDate} успешно добавлена`);
     } catch (error) {
@@ -77,24 +63,13 @@ const ManageDatesModal = ({ show, onClose, dates, onComplete }) => {
       setIsLoading(false);
     }
   };
-
+  
   const handleRestoreDates = async () => {
     setIsLoading(true);
     try {
-      const response = await fetch('http://localhost:5000/api/manage_dates', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ action: 'restore' }),
-      });
-      
-      if (!response.ok) {
-        throw new Error('Failed to restore dates');
-      }
-      
-      const data = await response.json();
-      setSelectedDates(data.dates);
+      const response = await scheduleApi.restoreDates(); // Добавлен await
+      const data = response;
+      updateDatesWithSort(data.dates || []);
       toast.success('Даты успешно восстановлены');
     } catch (error) {
       console.error('Error restoring dates:', error);
@@ -178,8 +153,8 @@ const ManageDatesModal = ({ show, onClose, dates, onComplete }) => {
         
         {selectedDates && selectedDates.length > 0 ? (
           <div className="row row-cols-1 row-cols-md-3 g-3">
-            {selectedDates.map((date, index) => (
-              <div className="col" key={index}>
+            {selectedDates.map((date) => (
+              <div className="col" key={date}>
                 <div className="card h-100">
                   <div className="card-body d-flex align-items-center">
                     <Calendar size={18} className="me-2 text-primary" />

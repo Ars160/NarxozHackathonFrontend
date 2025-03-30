@@ -254,3 +254,54 @@ body {
   z-index: 9998;
   pointer-events: all; /* Блокируем взаимодействие */
 }
+
+
+/* Анимации */
+.card {
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.card:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 8px 20px rgba(200, 16, 46, 0.1);
+}
+
+/* Кастомные стили для форм */
+.input-group-text {
+  border-right: none !important;
+  background-color: rgba(200, 16, 46, 0.05) !important;
+}
+
+.form-control {
+  border-left: none !important;
+  padding-left: 0.5rem !important;
+}
+
+.form-control:focus {
+  box-shadow: none !important;
+  border-color: #dee2e6 !important;
+}
+
+.text-red {
+  color: #C8102E !important;
+  transition: color 0.2s ease;
+}
+
+.text-red:hover {
+  color: #A00D26 !important;
+}
+
+.btn-red {
+  background-color: #C8102E;
+  border: none;
+  transition: all 0.3s ease;
+}
+
+.btn-red:hover {
+  background-color: #A00D26;
+  transform: translateY(-2px);
+}
+
+.text-white {
+  color: #fff !important;
+}
