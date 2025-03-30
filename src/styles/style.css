@@ -219,3 +219,20 @@ body {
   color: #664cda;
   border: 1px solid #664cda;
 }
+
+/* Добавить для переключателей */
+.form-switch .form-check-input {
+  width: 3em;
+  height: 1.5em;
+  cursor: pointer;
+}
+
+.form-switch .form-check-input:checked {
+  background-color: #C8102E;
+  border-color: #C8102E;
+}
+
+.form-switch .form-check-input:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
