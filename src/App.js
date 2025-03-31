@@ -273,7 +273,7 @@ const filterData = useCallback((data) => {
             { key: 'Time_Slot', label: 'Время' },
             { key: 'Room', label: 'Аудитория' },
             { key: 'Proctor', label: 'Проктор' },
-            { key: 'actions', label: 'Действия', disableSort: true},
+            // { key: 'actions', label: 'Действия', disableSort: true},
             { key: 'entry', label: 'Вход' }
           ].map(({ key, label }) => (
             <th
@@ -328,14 +328,14 @@ const filterData = useCallback((data) => {
                 </span>
               </td>
               <td data-label="Проктор">{exam.Proctor}</td>
-              <td data-label="Редактировать">
+              {/* <td data-label="Редактировать">
                 <button 
                   onClick={() => setEditingExam(exam)}
                   className="btn btn-blue btn-sm d-inline-flex align-items-center">
                   <EditIcon size={16} className="me-1" />
                   Редактировать
                 </button>
-              </td>
+              </td> */}
               <td data-label="Вход">
                 <button
                   onClick={() => handleEntryClick(exam)}
