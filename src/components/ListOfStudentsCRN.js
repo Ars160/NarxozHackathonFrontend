@@ -12,13 +12,52 @@ const ListOfStudentsCRN = () => {
   const { sectionId } = useParams();
   const navigate = useNavigate();
 
-  // Используем useCallback для стабилизации функции
+  
+  const parseRooms = (roomString) => {
+    return roomString.split(' + ').map(room => {
+      const [number, capacity] = room.match(/\d+/g);
+      return {
+        number: number,
+        capacity: parseInt(capacity),
+        current: 0
+      };
+    });
+  };
+
+  const assignSeats = (students, rooms) => {
+    let roomIndex = 0;
+    return students.map(student => {
+      if (rooms[roomIndex].current >= rooms[roomIndex].capacity) {
+        roomIndex++;
+        rooms[roomIndex].current = 0;
+      }
+      
+      rooms[roomIndex].current++;
+      
+      return {
+        ...student,
+        roomNumber: rooms[roomIndex].number,
+        seatNumber: rooms[roomIndex].current
+      };
+    });
+  };
+
+
   const fetchSectionInfo = useCallback(async () => {
     try {
       const response = await fetch(`http://localhost:5000/section/${sectionId}`);
       if (!response.ok) throw new Error('Failed to fetch section info');
       const data = await response.json();
-      setSectionInfo(data);
+      console.log('Fetched data:', data);
+      
+
+      const rooms = parseRooms(data.schedule.Room);
+      const studentsWithSeats = assignSeats(data.students, rooms);
+      
+      setSectionInfo({
+        ...data,
+        students: studentsWithSeats
+      });
     } catch (error) {
       console.error('Error:', error);
       toast.error('Ошибка при загрузке информации о секции');
@@ -163,6 +202,12 @@ const ListOfStudentsCRN = () => {
                 value={sectionInfo.schedule.Time_Slot}
               />
               <InfoCard
+                icon={<Clock size={20} />}
+                title="Продолжительность"
+                value={`${Math.floor(sectionInfo.schedule.Duration)} мин.`}
+              />
+
+              <InfoCard
                 icon={<Building size={20} />}
                 title="Аудитория"
                 value={sectionInfo.schedule.Room}
@@ -186,15 +231,19 @@ const ListOfStudentsCRN = () => {
               <table className="table table-hover mb-0">
                 <thead className="bg-light">
                   <tr>
-                    <th style={{ width: '40%' }} className="py-3">ID студента</th>
-                    <th style={{ width: '60%' }} className="py-3">Имя студента</th>
+                    <th style={{ width: '30%' }} className="py-3">ID студента</th>
+                    <th style={{ width: '40%' }} className="py-3">Имя студента</th>
+                    <th style={{ width: '15%' }} className="py-3">Аудитория</th>
+                    <th style={{ width: '15%' }} className="py-3">Место</th>
                   </tr>
                 </thead>
                 <tbody>
-                  {filteredStudents.map((student, index) => (
-                    <tr key={index} className="align-middle">
-                      <td className="py-3">{student.fake_id}</td>
-                      <td className="py-3">{student.fake_name}</td>
+                {filteredStudents.map(student => (
+                    <tr key={student.fake_id}>
+                      <td>{student.fake_id}</td>
+                      <td>{student.fake_name}</td>
+                      <td className="text-danger fw-bold">{student.roomNumber}</td>
+                      <td className="text-secondary">{student.seatNumber}</td>
                     </tr>
                   ))}
                   {filteredStudents.length === 0 && (
