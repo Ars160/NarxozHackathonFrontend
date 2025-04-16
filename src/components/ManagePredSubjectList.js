@@ -45,31 +45,25 @@ const ManagePredSubjectList = () => {
       }
 
       const data = await response.json();
-      console.log('Данные от сервера:', data);
-
-      // Преобразование структуры данных
       const groupsArray = [];
+      
       if (data.groups && typeof data.groups === 'object') {
         for (const eduProgram in data.groups) {
           if (Array.isArray(data.groups[eduProgram])) {
             groupsArray.push(...data.groups[eduProgram].map(group => ({
               ...group,
-              EduProgram: eduProgram
+              EduProgram: eduProgram,
+              has_exam: group.has_exam ?? true
             })));
           }
         }
       }
 
-      setSubjectGroups(prev => ({
-        ...prev,
-        [subject]: groupsArray
-      }));
-      
+      setSubjectGroups(prev => ({ ...prev, [subject]: groupsArray }));
       setSelectedSubject(subject);
       setIsGroupsOpen(true);
 
     } catch (error) {
-      console.error('Error:', error);
       toast.error(`Ошибка при загрузке групп для предмета "${subject}"`);
     } finally {
       setGroupsLoading(false);
@@ -127,105 +121,48 @@ const ManagePredSubjectList = () => {
   };
 
   const handleExamToggle = async (sectionId, checked) => {
-    const toastId = toast.loading('Обновление статуса экзамена...');
-    
     try {
-      setSubjectGroups(prev => ({
-        ...prev,
-        [selectedSubject]: (prev[selectedSubject] || []).map(group => 
-          group.Section === sectionId ? { 
-            ...group, 
-            has_exam: checked,
-            proctor_needed: checked ? group.proctor_needed : false
-          } : group
-        )
-      }));
-      
+      const updatedGroups = subjectGroups[selectedSubject].map(group => 
+        group.Section === sectionId ? { ...group, has_exam: checked } : group
+      );
+
       await scheduleApi.updateExamStatus({
         exams: [{ section_id: sectionId, has_exam: checked }]
       });
-      
-      toast.update(toastId, { 
-        render: `Статус экзамена ${checked ? 'включен' : 'выключен'}`, 
-        type: 'success',
-        isLoading: false,
-        autoClose: 3000
-      });
-    } catch (error) {
-      console.error('Ошибка:', error);
+
       setSubjectGroups(prev => ({
         ...prev,
-        [selectedSubject]: (prev[selectedSubject] || []).map(group => 
-          group.Section === sectionId ? { 
-            ...group, 
-            has_exam: !checked,
-            proctor_needed: !checked ? false : group.proctor_needed
-          } : group
-        )
+        [selectedSubject]: updatedGroups
       }));
       
-      toast.update(toastId, { 
-        render: 'Ошибка обновления статуса', 
-        type: 'error',
-        isLoading: false,
-        autoClose: 3000
-      });
+    } catch (error) {
+      toast.error('Ошибка обновления статуса экзамена');
     }
   };
 
-  const handleProctorToggle = async (sectionId, checked) => {
-    const toastId = toast.loading('Обновление статуса проктора...');
-    
+  const handleToggleAllExams = async (enable) => {
+    if (!selectedSubject) return;
+
+    const updatedGroups = subjectGroups[selectedSubject].map(group => ({
+      ...group,
+      has_exam: enable
+    }));
+
     try {
-      const group = subjectGroups[selectedSubject].find(g => g.Section === sectionId);
-      if (!group?.has_exam && checked) {
-        toast.update(toastId, { 
-          render: 'Нельзя назначить проктора без экзамена', 
-          type: 'error',
-          isLoading: false,
-          autoClose: 3000
-        });
-        return;
-      }
-      
+      await scheduleApi.updateExamStatus({
+        exams: updatedGroups.map(group => ({
+          section_id: group.Section,
+          has_exam: enable
+        }))
+      });
+
       setSubjectGroups(prev => ({
         ...prev,
-        [selectedSubject]: (prev[selectedSubject] || []).map(group => 
-          group.Section === sectionId ? { 
-            ...group, 
-            proctor_needed: checked 
-          } : group
-        )
+        [selectedSubject]: updatedGroups
       }));
-      
-      await scheduleApi.updateProctorStatus({
-        exams: [{ section_id: sectionId, proctor_needed: checked }]
-      });
-      
-      toast.update(toastId, { 
-        render: `Проктор ${checked ? 'назначен' : 'снят'}`, 
-        type: 'success',
-        isLoading: false,
-        autoClose: 3000
-      });
+
     } catch (error) {
-      console.error('Ошибка:', error);
-      setSubjectGroups(prev => ({
-        ...prev,
-        [selectedSubject]: (prev[selectedSubject] || []).map(group => 
-          group.Section === sectionId ? { 
-            ...group, 
-            proctor_needed: !checked 
-          } : group
-        )
-      }));
-      
-      toast.update(toastId, { 
-        render: 'Ошибка обновления статуса', 
-        type: 'error',
-        isLoading: false,
-        autoClose: 3000
-      });
+      toast.error('Ошибка обновления статуса экзаменов');
     }
   };
 
@@ -274,24 +211,27 @@ const ManagePredSubjectList = () => {
         {isGroupsOpen && selectedSubject && (
           <div className="card shadow-sm mb-4">
             <div className="card-header bg-white border-bottom p-4 position-relative">
-              <h2 className="h4 mb-0 d-flex align-items-center gap-2">
-                <BookOpen size={24} style={{ color: '#C8102E' }} />
-                Группы предмета "{selectedSubject}"
-              </h2>
-              <button
-                onClick={closeGroups}
-                className="btn position-absolute top-0 end-0 m-3"
-                style={{ 
-                  backgroundColor: '#C8102E', 
-                  width: '45px', 
-                  height: '35px',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center'
-                }}
-              >
-                <X size={25} color="white" />
-              </button>
+              <div className="d-flex align-items-center justify-content-between">
+                <h2 className="h4 mb-0 d-flex align-items-center gap-2">
+                  <BookOpen size={24} style={{ color: '#C8102E' }} />
+                  Группы предмета "{selectedSubject}"
+                </h2>
+                <div className="d-flex gap-2">
+                  <button
+                    onClick={() => handleToggleAllExams(!subjectGroups[selectedSubject].every(g => g.has_exam))}
+                    className="btn btn-red"
+                  >
+                    {subjectGroups[selectedSubject].every(g => g.has_exam) ? 'Отключить все' : 'Включить все'}
+                  </button>
+                  <button
+                    onClick={closeGroups}
+                    className="btn btn-red"
+                    style={{ padding: '8px 12px' }}
+                  >
+                    <X size={20} />
+                  </button>
+                </div>
+              </div>
             </div>
             
             <div className="card-body p-4">
@@ -303,29 +243,20 @@ const ManagePredSubjectList = () => {
                       <th>Программа</th>
                       <th>Преподаватель</th>
                       <th className="text-center">Экзамен</th>
-                      <th className="text-center">Проктор</th>
                       <th className="text-end">Действия</th>
                     </tr>
                   </thead>
                   <tbody>
                     {(subjectGroups[selectedSubject] || []).map((group) => (
-                      <tr key={group.fake_id || group.Section}>
+                      <tr key={group.Section}>
                         <td>{group.Section}</td>
                         <td>{group.EduProgram}</td>
                         <td>{group.Instructor}</td>
                         <td className="text-center">
                           <Form.Check 
                             type="switch"
-                            checked={group.has_exam ?? true}
+                            checked={group.has_exam}
                             onChange={(e) => handleExamToggle(group.Section, e.target.checked)}
-                          />
-                        </td>
-                        <td className="text-center">
-                          <Form.Check
-                            type="switch"
-                            checked={group.proctor_needed ?? false}
-                            disabled={!group.has_exam}
-                            onChange={(e) => handleProctorToggle(group.Section, e.target.checked)}
                           />
                         </td>
                         <td className="text-end">

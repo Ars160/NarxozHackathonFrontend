@@ -11,6 +11,7 @@ const CreateExamModal = ({ show, onClose}) => {
   const [fileExams, setFileExams] = useState(null);
   const [fileRooms, setFileRooms] = useState(null);
   const [fileFaculties, setFileFaculties] = useState(null);
+  const [fileSpecExams, setFileSpecExams] = useState(null);
   const [startDate, setStartDate] = useState('');
   const [numDays, setNumDays] = useState('');
   const [showDatesModal, setShowDatesModal] = useState(false);
@@ -30,6 +31,7 @@ const CreateExamModal = ({ show, onClose}) => {
     formData.append('exams', fileExams);
     formData.append('rooms', fileRooms);
     formData.append('faculties', fileFaculties);
+    formData.append('special_exams', fileSpecExams);
     formData.append('start_date', startDate);
     formData.append('num_days', numDays);
 
@@ -113,6 +115,10 @@ const CreateExamModal = ({ show, onClose}) => {
             <Form.Group controlId="formFileFaculties" className="mb-3">
               <Form.Label>Файл с факультетами</Form.Label>
               <Form.Control type="file" onChange={(e) => setFileFaculties(e.target.files[0])} />
+            </Form.Group>
+            <Form.Group controlId="formFileFaculties" className="mb-3">
+              <Form.Label>Файл с spec</Form.Label>
+              <Form.Control type="file" onChange={(e) => setFileSpecExams(e.target.files[0])} />
             </Form.Group>
             <Form.Group controlId="formStartDate" className="mb-2">
               <Form.Label>Дата начала</Form.Label>
