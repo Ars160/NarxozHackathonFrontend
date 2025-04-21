@@ -1,12 +1,13 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Calendar, Search, User, Download, ArrowUpDown, LogIn, Filter, EditIcon} from 'lucide-react';
+import { Calendar, Search, User, Download, ArrowUpDown, LogIn, Filter, UserPlus } from 'lucide-react';
 import { toast } from 'react-toastify';
 import 'bootstrap/dist/css/bootstrap.min.css';
 import { scheduleApi } from './services/Api';
 import './styles/style.css';
 import Navbar from './components/NavBar';
 import EditExamModal from './components/EditExamModal';
+import AssignProctorModal from './components/AssignProctorModal';
 
 const ExamScheduler = () => {
   const [scheduleData, setScheduleData] = useState([]);
@@ -27,6 +28,16 @@ const ExamScheduler = () => {
   const [sortConfig, setSortConfig] = useState({ key: null, direction: 'ascending' });
   const navigate = useNavigate();
   const [editingExam, setEditingExam] = useState(null);
+
+  const [showModal, setShowModal] = useState(false);
+
+  const handleProctor = () => {
+    setShowModal(true);
+  };
+
+  const handleCloseModal = () => {
+    setShowModal(false);
+  };
 
   const onResetFilters = () => {
     setFilterCriteria({
@@ -207,6 +218,17 @@ const filterData = useCallback((data) => {
     }
   };
 
+  const handleDownloadProctors = async () => {
+    try {
+        await scheduleApi.exportDownloadProctors();
+      toast.success('Файл успешно экспортирован');
+    } catch (err) {
+      toast.error('Ошибка при экспорте файла');
+      console.error(err);
+    }
+  };
+  
+
   useEffect(() => {
     fetchScheduleData();
   }, [fetchScheduleData]);
@@ -257,6 +279,18 @@ const filterData = useCallback((data) => {
         <label className="form-label">Проктор</label>
         <input type="text" name="proctor" value={filterCriteria.proctor} onChange={handleFilterChange} className="form-control" placeholder="Фильтр по проктору" />
       </div>
+      {/* Назначить проктора */}
+      <div className="col-12 col-sm-6 col-md-4 col-lg-3">
+      <label className="form-label">Назначить Проктора</label>
+            <button
+              onClick={handleProctor}
+              className="btn btn-red text-white d-flex gap-2"
+              style={{ backgroundColor: '#C8102E' }}
+            >
+               <UserPlus size={20}/>
+            </button>
+      </div>
+      <AssignProctorModal show={showModal} onClose={handleCloseModal} />
     </div>
   );
 
@@ -387,6 +421,15 @@ const filterData = useCallback((data) => {
               </button>
             </div>
           <div className="d-flex gap-3 mt-2 flex-wrap">
+          <button
+            className="btn btn-red text-white d-flex align-items-center gap-2"
+            style={{ backgroundColor: '#C8102E' }}
+            onClick={handleDownloadProctors}
+          >
+            <Download size={20} />
+            Скачать список прокторов
+          </button>
+
             <button
               onClick={onResetFilters}
               className="btn btn-outline-red d-flex align-items-center gap-2"

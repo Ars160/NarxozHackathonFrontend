@@ -67,6 +67,26 @@ export const scheduleApi = {
     }
   },
 
+  exportDownloadProctors: async () => {
+    try {
+      const response = await fetch(`${BASE_URL}/api/proctors/save_excel`);
+      if (!response.ok) {
+        throw new Error('Network response was not ok');
+      }
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'proctor_list.xlsx';
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+    } catch (error) {
+      console.error('Error exporting schedule:', error);
+      throw error;
+    }
+  },
+
   createExam: async (formData) => {
     try {
       const response = await fetch(`${BASE_URL}/api/init`, {
