@@ -1,13 +1,12 @@
 import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import { Lock, Mail} from 'lucide-react';
-import '../styles/auth.css' 
-
-
+import { Lock, User, Eye, EyeOff } from 'lucide-react';
+import '../styles/auth.css';
 
 const Login = () => {
-  const [email, setEmail] = useState('');
+  const [sId, setSId] = useState('');
   const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState(null);
   const navigate = useNavigate();
 
@@ -19,7 +18,7 @@ const Login = () => {
         headers: {
           'Content-Type': 'application/json'
         },
-        body: JSON.stringify({ email, password })
+        body: JSON.stringify({ email: sId, password })
       });
       const data = await response.json();
       if (!response.ok) {
@@ -27,7 +26,7 @@ const Login = () => {
       } else {
         if (data.access_token) {
           localStorage.setItem('token', data.access_token);
-          navigate('/'); 
+          navigate('/create-exam'); 
         } else {
           setError('Неверный ответ от сервера');
         }
@@ -35,6 +34,10 @@ const Login = () => {
     } catch (err) {
       setError('Ошибка при входе');
     }
+  };
+
+  const togglePasswordVisibility = () => {
+    setShowPassword((prev) => !prev);
   };
 
   return (
@@ -52,17 +55,18 @@ const Login = () => {
 
                 <form onSubmit={handleSubmit}>
                   <div className="mb-4">
-                    <label className="form-label text-secondary">Email</label>
+                    <label className="form-label text-secondary">S-ID</label>
                     <div className="input-group">
                       <span className="input-group-text bg-red-20">
-                        <Mail size={20} color="#C8102E" />
+                        <User size={20} color="#C8102E" />
                       </span>
                       <input
-                        type="email"
+                        type="text"
                         className="form-control"
-                        placeholder="example@narxoz.kz"
-                        value={email}
-                        onChange={(e) => setEmail(e.target.value)}
+                        placeholder="Введите ваш S-ID"
+                        value={sId}
+                        onChange={(e) => setSId(e.target.value)}
+                        required
                       />
                     </div>
                   </div>
@@ -74,26 +78,35 @@ const Login = () => {
                         <Lock size={20} color="#C8102E" />
                       </span>
                       <input
-                        type="password"
+                        type={showPassword ? 'text' : 'password'}
                         className="form-control"
-                        placeholder="••••••••"
+                        placeholder="Пароль"
                         value={password}
                         onChange={(e) => setPassword(e.target.value)}
+                        autoComplete="current-password"
+                        required
                       />
+                      <span
+                        className="input-group-text"
+                        role="button"
+                        onClick={togglePasswordVisibility}
+                      >
+                        {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
+                      </span>
                     </div>
                   </div>
 
-                  <button 
-                    type="submit" 
-                    className="btn btn-red w-100 py-2 fw-bold "
+                  <button
+                    type="submit"
+                    className="btn btn-red w-100 py-2 fw-bold"
                   >
                     Войти
                   </button>
 
                   <div className="text-center mt-4">
                     <span className="text-muted">Нет аккаунта? </span>
-                    <Link 
-                      to="/register" 
+                    <Link
+                      to="/register"
                       className="text-decoration-none text-red fw-bold"
                     >
                       Зарегистрироваться
