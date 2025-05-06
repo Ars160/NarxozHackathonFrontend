@@ -355,7 +355,33 @@ export const scheduleApi = {
       console.error('Error updating proctor status:', error);
       throw error;
     }
+  },
+
+  updateRoomReqStatus: async (data) => {
+    try {
+      const response = await fetch(`${BASE_URL}/api/update_room_requirement`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(data)
+      });
+      
+      const responseData = await response.json();
+      
+      if (!response.ok) {
+        // If the server returns an error message, use it
+        throw new Error(responseData.message || `Ошибка HTTP: ${response.status}`);
+      }
+      
+      return responseData;
+    } catch (error) {
+      console.error('Error updating room requirement status:', error);
+      throw error;
+    }
   }
-}; 
+
+};
+
 
 

@@ -73,7 +73,7 @@ const AssignProctorModal = ({ show, onClose }) => {
         )}
         <Form>
           <Form.Group controlId="formProctorsFile" className="mb-3">
-            <Form.Label>Файл с неподходящими прокторами (.xlsx)</Form.Label>
+            <Form.Label>Загрузить файл с прокторами (.xlsx)</Form.Label>
             <Form.Control type="file" accept=".xlsx" onChange={handleFileChange} />
           </Form.Group>
         </Form>
