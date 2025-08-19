@@ -8,6 +8,7 @@ import '../styles/style.css';
 import Navbar from './NavBar';
 import { scheduleApi } from '../services/Api';
 import { GlobalLoader, LocalLoader } from './Loaderss';
+import { authHeaders } from '../utils/authHeaders';
 
 const ManagePredSubjectList = () => {
   const [subjects, setSubjects] = useState([]);
@@ -36,7 +37,7 @@ const ManagePredSubjectList = () => {
   const fetchSubjectGroups = async (subject) => {
     setGroupsLoading(true);
     try {
-      const response = await fetch(`http://localhost:5000/subjects/${encodeURIComponent(subject)}/groups`);
+      const response = await fetch(`http://localhost:5000/subjects/${encodeURIComponent(subject)}/groups`, authHeaders());
       
       if (!response.ok) {
         closeGroups();

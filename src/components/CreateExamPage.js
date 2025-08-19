@@ -25,7 +25,6 @@ const CreateExamPage = () => {
   const fetchSessions = useCallback(async () => {
       try {
         const data = await scheduleApi.getSessions();
-        console.log(data);
         setSessions(data);
         toast.success('Сессии успешно загружено');
       } catch (err) {

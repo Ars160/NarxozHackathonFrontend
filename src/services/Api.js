@@ -1,9 +1,10 @@
+import { authHeaders } from "../utils/authHeaders"
 const BASE_URL = 'http://localhost:5000';
 
 export const scheduleApi = {
   getGeneralSchedule: async () => {
     try {
-      const response = await fetch(`${BASE_URL}/schedule`);
+      const response = await fetch(`${BASE_URL}/schedule`, authHeaders());
       if (!response.ok) {
         throw new Error('Network response was not ok');
       }
@@ -16,7 +17,7 @@ export const scheduleApi = {
 
   getStudentSchedule: async (studentId) => {
     try {
-      const response = await fetch(`${BASE_URL}/schedule/student/${studentId}`);
+      const response = await fetch(`${BASE_URL}/schedule/student/${studentId}`, authHeaders());
       if (!response.ok) {
         throw new Error('Network response was not ok');
       }
@@ -29,7 +30,7 @@ export const scheduleApi = {
 
   exportGeneralSchedule: async () => {
     try {
-      const response = await fetch(`${BASE_URL}/schedule/export`);
+      const response = await fetch(`${BASE_URL}/schedule/export`, authHeaders());
       if (!response.ok) {
         throw new Error('Network response was not ok');
       }
@@ -49,7 +50,7 @@ export const scheduleApi = {
 
   exportStudentSchedule: async (studentId) => {
     try {
-      const response = await fetch(`${BASE_URL}/schedule/student/${studentId}/export`);
+      const response = await fetch(`${BASE_URL}/schedule/student/${studentId}/export`, authHeaders());
       if (!response.ok) {
         throw new Error('Network response was not ok');
       }
@@ -69,7 +70,7 @@ export const scheduleApi = {
 
   exportDownloadProctors: async () => {
     try {
-      const response = await fetch(`${BASE_URL}/api/proctors/save_excel`);
+      const response = await fetch(`${BASE_URL}/api/proctors/save_excel`, authHeaders());
       if (!response.ok) {
         throw new Error('Network response was not ok');
       }
@@ -89,9 +90,11 @@ export const scheduleApi = {
 
   createExam: async (formData) => {
     try {
+      
       const response = await fetch(`${BASE_URL}/api/init`, {
+        ...authHeaders(),
         method: 'POST',
-        body: formData,
+        body: formData, 
       });
       if (!response.ok) {
         throw new Error('Network response was not ok');
@@ -108,6 +111,7 @@ export const scheduleApi = {
       const response = await fetch(`${BASE_URL}/api/manage_dates`, {
         method: 'POST',
         headers: {
+          ...authHeaders().headers,
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({ action, ...dateData }),
@@ -127,6 +131,7 @@ export const scheduleApi = {
       const response = await fetch(`${BASE_URL}/api/manage`, {
         method: 'POST',
         headers: {
+          ...authHeaders().headers,
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({ action: 'get_subjects' }),
@@ -147,6 +152,7 @@ export const scheduleApi = {
       const response = await fetch(`${BASE_URL}/api/manage`, {
         method: 'POST',
         headers: {
+          ...authHeaders().headers,
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({ action: 'delete_subject', subject }),
@@ -167,6 +173,7 @@ export const scheduleApi = {
       const response = await fetch(`${BASE_URL}/api/manage`, {
         method: 'POST',
         headers: {
+          ...authHeaders().headers,
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({ action: 'delete_section', section }),
@@ -187,6 +194,7 @@ export const scheduleApi = {
       const response = await fetch(`${BASE_URL}/api/manage`, {
         method: 'POST',
         headers: {
+          ...authHeaders().headers,
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({ action: 'generate' }),
@@ -206,7 +214,9 @@ export const scheduleApi = {
 
   getSessions: async() => {
     try{
-      const response = await fetch(`${BASE_URL}/api/sessions`);
+      const response = await fetch(`${BASE_URL}/api/sessions`,
+        authHeaders()
+      );
       if(!response.ok)
         throw new Error('Network response was not ok');
       return await response.json();
@@ -219,6 +229,7 @@ export const scheduleApi = {
   activateSession: async(sessionId) => {
     try{
       const response = await fetch(`${BASE_URL}/api/sessions/${sessionId}/activate`, {
+        ...authHeaders(),
         method: 'POST',
       });
       if(!response.ok)
@@ -233,6 +244,7 @@ export const scheduleApi = {
   deleteSession: async (sessionId) => {
     try {
       const response = await fetch(`${BASE_URL}/api/sessions/${sessionId}`, {
+        ...authHeaders(),
         method: 'DELETE',
       });
       if (!response.ok) {
@@ -251,6 +263,7 @@ export const scheduleApi = {
       const response = await fetch(`${BASE_URL}/api/manage_dates`, {
         method: 'POST',
         headers: {
+          ...authHeaders().headers,
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({ 
@@ -273,6 +286,7 @@ export const scheduleApi = {
       const response = await fetch(`${BASE_URL}/api/manage_dates`, {
         method: 'POST',
         headers: {
+          ...authHeaders().headers,
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({ 
@@ -295,6 +309,7 @@ export const scheduleApi = {
       const response = await fetch(`${BASE_URL}/api/manage_dates`, {
         method: 'POST',
         headers: {
+          ...authHeaders().headers,
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({ action: 'restore' }),
@@ -314,6 +329,7 @@ export const scheduleApi = {
       const response = await fetch(`${BASE_URL}/api/update_exam_status`, {
         method: 'POST',
         headers: {
+          ...authHeaders().headers,
           'Content-Type': 'application/json',
         },
         body: JSON.stringify(data)
@@ -338,6 +354,7 @@ export const scheduleApi = {
       const response = await fetch(`${BASE_URL}/api/update_proctor_status`, {
         method: 'POST',
         headers: {
+          ...authHeaders().headers,
           'Content-Type': 'application/json',
         },
         body: JSON.stringify(data)
@@ -362,6 +379,7 @@ export const scheduleApi = {
       const response = await fetch(`${BASE_URL}/api/update_room_requirement`, {
         method: 'POST',
         headers: {
+          ...authHeaders().headers,
           'Content-Type': 'application/json',
         },
         body: JSON.stringify(data)

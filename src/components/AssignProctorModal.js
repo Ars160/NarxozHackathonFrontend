@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Modal, Button, Form, Spinner } from 'react-bootstrap';
 import { toast } from 'react-toastify';
+import { authHeaders } from '../utils/authHeaders';
 
 const AssignProctorModal = ({ show, onClose }) => {
   const [file, setFile] = useState(null);
@@ -23,6 +24,7 @@ const AssignProctorModal = ({ show, onClose }) => {
       setIsLoading(true);
   
       const response = await fetch('http://localhost:5000/api/proctors/assign', {
+        ...authHeaders(),
         method: 'POST',
         body: formData,
       });

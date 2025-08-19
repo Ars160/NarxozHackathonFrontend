@@ -25,6 +25,7 @@ const Login = () => {
         setError(data.error);
       } else {
         if (data.access_token) {
+          
           localStorage.setItem('token', data.access_token);
           navigate('/create-exam'); 
         } else {
