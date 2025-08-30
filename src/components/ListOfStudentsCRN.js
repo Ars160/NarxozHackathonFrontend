@@ -14,11 +14,23 @@ const ListOfStudentsCRN = () => {
 
   
   const parseRooms = (roomString) => {
-    return roomString.split(' + ').map(room => {
-      const [number, capacity] = room.match(/\d+/g);
+    // Приводим roomString к строке
+    const roomStr = String(roomString);
+    // Проверяем, содержит ли строка формат "число + число"
+    if (!roomStr.includes('+')) {
+      // Если это одно число (например, "533"), создаем одну комнату
+      return [{
+        number: roomStr,
+        capacity: 50, // Установите значение по умолчанию или получите из API
+        current: 0
+      }];
+    }
+    // Обрабатываем формат "число + число"
+    return roomStr.split(' + ').map(room => {
+      const [number, capacity] = room.match(/\d+/g) || [];
       return {
-        number: number,
-        capacity: parseInt(capacity),
+        number: number || 'Неизвестно',
+        capacity: parseInt(capacity) || 0,
         current: 0
       };
     });
