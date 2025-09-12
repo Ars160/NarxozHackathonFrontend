@@ -9,6 +9,7 @@ import ManagePredSubjectList from './components/ManagePredSubjectList';
 import Login from './components/Login';
 import Register from './components/Register';
 import ProtectedRoute from './components/ProtectedRoute';
+import AdminManagePage from './pages/AdminManagePage'
 
 const el = document.getElementById('root');
 const root = ReactDOM.createRoot(el);
@@ -55,6 +56,14 @@ root.render(
                 element={
                     <ProtectedRoute>
                         <ManagePredSubjectList />
+                    </ProtectedRoute>
+                }
+            />
+            <Route
+                path="/admin-manage-list"
+                element={
+                    <ProtectedRoute>
+                        <AdminManagePage />
                     </ProtectedRoute>
                 }
             />

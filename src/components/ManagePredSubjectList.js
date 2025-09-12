@@ -17,7 +17,7 @@ const ManagePredSubjectList = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [isGroupsOpen, setIsGroupsOpen] = useState(false);
   const [groupsLoading, setGroupsLoading] = useState(false);
-  const [scheduleLoading, setScheduleLoading] = useState(false);
+  const [readyLoading, setReadyLoading] = useState(false);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -54,7 +54,6 @@ const ManagePredSubjectList = () => {
             groupsArray.push(...data.groups[eduProgram].map(group => ({
               ...group,
               EduProgram: eduProgram,
-              // Важно: получаем значения из ответа сервера или используем значения по умолчанию
               has_exam: group.has_exam ?? true,
               has_proctor: group.has_proctor ?? true,
               has_room: group.has_room ?? false
@@ -76,7 +75,6 @@ const ManagePredSubjectList = () => {
 
   const closeGroups = () => {
     setSelectedSubject(null);
-    // Не очищаем subjectGroups, чтобы сохранить состояние при повторном открытии
     setIsGroupsOpen(false);
   };
 
@@ -86,14 +84,12 @@ const ManagePredSubjectList = () => {
         await scheduleApi.deleteSubject(subject);
         fetchSubjects();
         
-        // Удаляем сохраненное состояние для этого предмета
         setSubjectGroups(prev => {
           const updated = { ...prev };
           delete updated[subject];
           return updated;
         });
         
-        // Если удаляем текущий выбранный предмет, закрываем панель групп
         if (selectedSubject === subject) {
           setSelectedSubject(null);
           setIsGroupsOpen(false);
@@ -111,7 +107,6 @@ const ManagePredSubjectList = () => {
       try {
         await scheduleApi.deleteSection(section);
         
-        // Обновляем сохраненное состояние - удаляем секцию из списка групп
         setSubjectGroups(prev => {
           const updatedGroups = { ...prev };
           updatedGroups[selectedSubject] = updatedGroups[selectedSubject].filter(
@@ -127,32 +122,37 @@ const ManagePredSubjectList = () => {
     }
   };
 
-  const handleGenerate = async () => {
-    setScheduleLoading(true);
+  const handleReady = async () => {
+    if (!window.confirm('Подтвердить готовность?')) return;
+    const userRole = localStorage.getItem('role');
+    console.log(userRole);
+    
+    const allowedRoles = ['admin-gum', 'admin-sdt', 'admin-sem', 'admin-spigu'];
+    if (!allowedRoles.includes(userRole)) {
+      toast.error('Доступ запрещен: требуется роль администратора');
+      return;
+    }
+    setReadyLoading(true);
     try {
-      const response = await scheduleApi.generateSchedule();
-      if (response.status === 'success') {
-        toast.success('Расписание успешно сгенерировано');
-        navigate('/');
-      }
+      await scheduleApi.setSubAdminStatus({
+        status: "ready"
+      })
+      toast.success('Готово отправлено');
+      navigate('/');
     } catch (error) {
-      toast.error('Ошибка при генерации расписания');
+      toast.error('Ошибка при отправке готовности');
     } finally {
-      setScheduleLoading(false);
+      setReadyLoading(false);
     }
   };
 
-  // Обновленная функция для переключения экзамена
   const handleExamToggle = async (sectionId, checked) => {
     try {
-      // Если экзамен отключен, также отключаем проктора и требование аудитории на 2
       const updatedGroups = subjectGroups[selectedSubject].map(group => {
         if (group.Section === sectionId) {
           return { 
             ...group, 
             has_exam: checked,
-            // Если экзамен отключается, то отключаем также проктора и требование аудитории
-            // Если экзамен включается, то по умолчанию включаем проктора
             has_proctor: checked ? true : false,
             has_room: checked ? group.has_room : false
           };
@@ -160,12 +160,10 @@ const ManagePredSubjectList = () => {
         return group;
       });
 
-      // Обновляем статус экзамена на бэкенде
       await scheduleApi.updateExamStatus({
         exams: [{ section_id: sectionId, has_exam: checked }]
       });
 
-      // Если экзамен отключен, также отключаем проктора и требование аудитории на бэкенде
       if (!checked) {
         await scheduleApi.updateProctorStatus({
           exams: [{ section_id: sectionId, has_proctor: false }]
@@ -175,7 +173,6 @@ const ManagePredSubjectList = () => {
           exams: [{ section_id: sectionId, has_room: false }]
         });
       } else {
-        // Если экзамен включен, автоматически включаем проктора
         await scheduleApi.updateProctorStatus({
           exams: [{ section_id: sectionId, has_proctor: true }]
         });
@@ -195,13 +192,11 @@ const ManagePredSubjectList = () => {
     try {
       const group = subjectGroups[selectedSubject].find(g => g.Section === sectionId);
       
-      // Нельзя включить проктора, если экзамен отключен
       if (checked && !group.has_exam) {
         toast.warning('Нельзя включить проктора без экзамена');
         return;
       }
   
-      // Оптимистичное обновление состояния
       const updatedGroups = subjectGroups[selectedSubject].map(group => 
         group.Section === sectionId ? { ...group, has_proctor: checked } : group
       );
@@ -216,7 +211,6 @@ const ManagePredSubjectList = () => {
       });
   
     } catch (error) {
-      // Откатываем состояние в случае ошибки
       toast.error('Ошибка обновления статуса проктора');
       setSubjectGroups(prev => ({
         ...prev,
@@ -227,17 +221,17 @@ const ManagePredSubjectList = () => {
   
   const handleRoomReqToggle = async (sectionId, checked) => {
     try {
+      console.log(checked);
+      
       const group = subjectGroups[selectedSubject].find(g => g.Section === sectionId);
       
-      // Нельзя включить требование аудитории, если экзамен отключен
       if (checked && !group.has_exam) {
         toast.warning('Нельзя включить требование аудитории без экзамена');
         return;
       }
   
-      // Оптимистичное обновление состояния
       const updatedGroups = subjectGroups[selectedSubject].map(group => 
-        group.Section === sectionId ? { ...group, has_room: checked } : group
+        group.Section === sectionId ? { ...group, two_rooms_needed: checked } : group
       );
   
       setSubjectGroups(prev => ({
@@ -246,11 +240,10 @@ const ManagePredSubjectList = () => {
       }));
   
       await scheduleApi.updateRoomReqStatus({
-        exams: [{ section_id: sectionId, has_room: checked }]
+        exams: [{ section_id: sectionId, two_rooms_needed: checked }]
       });
   
     } catch (error) {
-      // Откатываем состояние в случае ошибки
       toast.error('Ошибка обновления требования аудитории');
       setSubjectGroups(prev => ({
         ...prev,
@@ -259,21 +252,17 @@ const ManagePredSubjectList = () => {
     }
   };
 
-  // Обновленная функция для включения/отключения всех экзаменов
   const handleToggleAllExams = async (enable) => {
     if (!selectedSubject) return;
 
     try {
-      // Создаем массив с обновленными значениями экзаменов для бэкенда
       const examUpdates = subjectGroups[selectedSubject].map(group => ({
         section_id: group.Section,
         has_exam: enable
       }));
 
-      // Обновляем статус экзаменов на бэкенде
       await scheduleApi.updateExamStatus({ exams: examUpdates });
 
-      // Если отключаем экзамены, также отключаем прокторов и требования аудиторий
       if (!enable) {
         const proctorAndRoomUpdates = subjectGroups[selectedSubject].map(group => ({
           section_id: group.Section,
@@ -281,7 +270,6 @@ const ManagePredSubjectList = () => {
           has_room: false
         }));
 
-        // Используем Promise.all для одновременного обновления проктора и аудитории
         await Promise.all([
           scheduleApi.updateProctorStatus({ 
             exams: proctorAndRoomUpdates.map(item => ({ 
@@ -297,7 +285,6 @@ const ManagePredSubjectList = () => {
           })
         ]);
       } else {
-        // Если включаем экзамены, по умолчанию включаем прокторов
         const proctorUpdates = subjectGroups[selectedSubject].map(group => ({
           section_id: group.Section,
           has_proctor: true
@@ -306,7 +293,6 @@ const ManagePredSubjectList = () => {
         await scheduleApi.updateProctorStatus({ exams: proctorUpdates });
       }
 
-      // Обновляем состояние
       const updatedGroups = subjectGroups[selectedSubject].map(group => ({
         ...group,
         has_exam: enable,
@@ -326,12 +312,10 @@ const ManagePredSubjectList = () => {
     }
   };
 
-  // Новая функция для включения/отключения всех прокторов
   const handleToggleAllProctors = async (enable) => {
     if (!selectedSubject) return;
 
     try {
-      // Получаем только те группы, у которых включен экзамен
       const groupsWithExam = subjectGroups[selectedSubject].filter(group => group.has_exam);
       
       if (groupsWithExam.length === 0) {
@@ -339,16 +323,13 @@ const ManagePredSubjectList = () => {
         return;
       }
 
-      // Создаем массив обновлений для бэкенда
       const proctorUpdates = groupsWithExam.map(group => ({
         section_id: group.Section,
         has_proctor: enable
       }));
 
-      // Обновляем статус прокторов на бэкенде
       await scheduleApi.updateProctorStatus({ exams: proctorUpdates });
 
-      // Обновляем состояние
       const updatedGroups = subjectGroups[selectedSubject].map(group => ({
         ...group,
         has_proctor: group.has_exam ? enable : false
@@ -366,12 +347,10 @@ const ManagePredSubjectList = () => {
     }
   };
 
-  // Новая функция для включения/отключения всех требований аудиторий
   const handleToggleAllRooms = async (enable) => {
     if (!selectedSubject) return;
 
     try {
-      // Получаем только те группы, у которых включен экзамен
       const groupsWithExam = subjectGroups[selectedSubject].filter(group => group.has_exam);
       
       if (groupsWithExam.length === 0) {
@@ -379,16 +358,13 @@ const ManagePredSubjectList = () => {
         return;
       }
 
-      // Создаем массив обновлений для бэкенда
       const roomUpdates = groupsWithExam.map(group => ({
         section_id: group.Section,
         has_room: enable
       }));
 
-      // Обновляем статус требований аудиторий на бэкенде
       await scheduleApi.updateRoomReqStatus({ exams: roomUpdates });
 
-      // Обновляем состояние
       const updatedGroups = subjectGroups[selectedSubject].map(group => ({
         ...group,
         has_room: group.has_exam ? enable : false
@@ -411,25 +387,25 @@ const ManagePredSubjectList = () => {
   );
 
   return (
-    <div className={`container-fluid p-0 min-vh-100 ${scheduleLoading ? 'disabled-page' : ''}`}>
+    <div className={`container-fluid p-0 min-vh-100 ${readyLoading ? 'disabled-page' : ''}`}>
       <Navbar showFilterButton={false} />
       
       <div className="container mt-4">
-        {scheduleLoading && <GlobalLoader />}
+        {readyLoading && <GlobalLoader />}
         
         <div className="d-flex flex-column flex-lg-row justify-content-between gap-3 mb-4">
           <button
-            onClick={handleGenerate}
+            onClick={handleReady}
             className="btn btn-red d-flex gap-2 py-2 px-4"
-            disabled={scheduleLoading}
+            disabled={readyLoading}
           >
-            {scheduleLoading ? (
+            {readyLoading ? (
               <>
                 <span className="spinner-border spinner-border-sm me-2" role="status" />
-                Генерация...
+                Отправка...
               </>
             ) : (
-              'Сгенерировать'
+              'Готово'
             )}
           </button>
           

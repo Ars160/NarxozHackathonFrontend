@@ -27,7 +27,13 @@ const Login = () => {
         if (data.access_token) {
           
           localStorage.setItem('token', data.access_token);
+          localStorage.setItem('role', data.user.role)
+          if(data.user.role === 'admin')
           navigate('/create-exam'); 
+          else if(data.user.role === 'admin-sdt' || data.user.role === 'admin-sem' || data.user.role === 'admin-gum' || data.user.role === 'admin-spigu')
+          navigate('/manage-subject-list')
+          else
+          navigate('/')
         } else {
           setError('Неверный ответ от сервера');
         }

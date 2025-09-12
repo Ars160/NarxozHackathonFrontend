@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react'; // Добавлен useCallback
+import React, { useState, useEffect, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { ArrowLeft, Download, Search, User, Calendar, Clock, BookOpen, Users, Hash, Building, CheckCircle } from 'lucide-react';
 import { toast } from 'react-toastify';
@@ -12,63 +12,17 @@ const ListOfStudentsCRN = () => {
   const { sectionId } = useParams();
   const navigate = useNavigate();
 
-  
-  const parseRooms = (roomString) => {
-    // Приводим roomString к строке
-    const roomStr = String(roomString);
-    // Проверяем, содержит ли строка формат "число + число"
-    if (!roomStr.includes('+')) {
-      // Если это одно число (например, "533"), создаем одну комнату
-      return [{
-        number: roomStr,
-        capacity: 50, // Установите значение по умолчанию или получите из API
-        current: 0
-      }];
-    }
-    // Обрабатываем формат "число + число"
-    return roomStr.split(' + ').map(room => {
-      const [number, capacity] = room.match(/\d+/g) || [];
-      return {
-        number: number || 'Неизвестно',
-        capacity: parseInt(capacity) || 0,
-        current: 0
-      };
-    });
-  };
-
-  const assignSeats = (students, rooms) => {
-    let roomIndex = 0;
-    return students.map(student => {
-      if (rooms[roomIndex].current >= rooms[roomIndex].capacity) {
-        roomIndex++;
-        rooms[roomIndex].current = 0;
-      }
-      
-      rooms[roomIndex].current++;
-      
-      return {
-        ...student,
-        roomNumber: rooms[roomIndex].number,
-        seatNumber: rooms[roomIndex].current
-      };
-    });
-  };
-
-
   const fetchSectionInfo = useCallback(async () => {
     try {
       const response = await fetch(`http://localhost:5000/section/${sectionId}`);
       if (!response.ok) throw new Error('Failed to fetch section info');
       const data = await response.json();
-      console.log('Fetched data:', data);
-      
 
-      const rooms = parseRooms(data.schedule.Room);
-      const studentsWithSeats = assignSeats(data.students, rooms);
+      const uniqueRooms = [...new Set(data.students.map(student => student.room))].join(', ');
       
       setSectionInfo({
         ...data,
-        students: studentsWithSeats
+        schedule: { ...data.schedule, Room: uniqueRooms }
       });
     } catch (error) {
       console.error('Error:', error);
@@ -76,11 +30,11 @@ const ListOfStudentsCRN = () => {
     } finally {
       setLoading(false);
     }
-  }, [sectionId]); // Зависимости useCallback
+  }, [sectionId]);
 
   useEffect(() => {
     fetchSectionInfo();
-  }, [sectionId, fetchSectionInfo]); // Добавлена fetchSectionInfo в зависимости
+  }, [fetchSectionInfo]);
 
   const handleExport = async () => {
     try {
@@ -110,10 +64,17 @@ const ListOfStudentsCRN = () => {
     }
   };
 
-  const filteredStudents = sectionInfo?.students.filter(student =>
+  const filteredStudents = sectionInfo?.students
+  .filter(student =>
     student.fake_name.toLowerCase().includes(searchQuery.toLowerCase()) ||
     student.fake_id.toLowerCase().includes(searchQuery.toLowerCase())
-  );
+  )
+  .sort((a, b) => {
+    // Преобразуем room в строку перед использованием localeCompare
+    const roomComparison = String(a.room).localeCompare(String(b.room), undefined, { numeric: true });
+    // Если аудитории одинаковые, сортируем по seat
+    return roomComparison || a.seat - b.seat;
+  }) || [];
 
   if (loading) {
     return (
@@ -218,7 +179,6 @@ const ListOfStudentsCRN = () => {
                 title="Продолжительность"
                 value={`${Math.floor(sectionInfo.schedule.Duration)} мин.`}
               />
-
               <InfoCard
                 icon={<Building size={20} />}
                 title="Аудитория"
@@ -227,7 +187,7 @@ const ListOfStudentsCRN = () => {
               <InfoCard
                 icon={<CheckCircle size={20} />}
                 title="Проктор"
-                value={sectionInfo.schedule.Proctor}
+                value={sectionInfo.schedule.Proctor || 'Не указан'}
               />
             </div>
           </div>
@@ -250,17 +210,17 @@ const ListOfStudentsCRN = () => {
                   </tr>
                 </thead>
                 <tbody>
-                {filteredStudents.map(student => (
+                  {filteredStudents.map((student) => (
                     <tr key={student.fake_id}>
                       <td>{student.fake_id}</td>
                       <td>{student.fake_name}</td>
-                      <td className="text-danger fw-bold">{student.roomNumber}</td>
-                      <td className="text-secondary">{student.seatNumber}</td>
+                      <td className="text-danger fw-bold">{student.room}</td>
+                      <td className="text-secondary">{student.seat}</td>
                     </tr>
                   ))}
                   {filteredStudents.length === 0 && (
                     <tr>
-                      <td colSpan="2" className="text-center py-4 text-muted">
+                      <td colSpan="4" className="text-center py-4 text-muted">
                         Студенты не найдены
                       </td>
                     </tr>

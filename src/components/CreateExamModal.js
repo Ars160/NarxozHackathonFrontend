@@ -58,10 +58,10 @@ const CreateExamModal = ({ show, onClose}) => {
     }
   };
 
-  const handleDatesComplete = (selectedDates) => {
+  const handleDatesComplete = () => {
     setShowDatesModal(false);
     onClose();
-    navigate('/manage-subject-list', {
+    navigate('/admin-manage-list', {
       state: {
         message: `Экзамен успешно создан и даты настроены!`,
         type: 'success',
