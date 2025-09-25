@@ -3,7 +3,6 @@ import ReactDOM from 'react-dom/client';
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import ExamScheduler from './App';
 import ListOfStudentsCRN from './components/ListOfStudentsCRN';
-import SubjectList from './components/SubjectList';
 import CreateExamPage from './components/CreateExamPage';
 import ManagePredSubjectList from './components/ManagePredSubjectList';
 import Login from './components/Login';
@@ -24,14 +23,6 @@ root.render(
                 element={
                     <ProtectedRoute>
                         <ExamScheduler />
-                    </ProtectedRoute>
-                }
-            />
-            <Route
-                path="/subjects"
-                element={
-                    <ProtectedRoute>
-                        <SubjectList />
                     </ProtectedRoute>
                 }
             />

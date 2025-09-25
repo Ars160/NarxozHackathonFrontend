@@ -1,5 +1,5 @@
-import React, { useEffect } from 'react';
-import { List, Home, ClipboardList } from 'lucide-react';
+import { useEffect } from 'react';
+import { Home, ClipboardList } from 'lucide-react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { ToastContainer, toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
@@ -28,7 +28,7 @@ const Navbar = () => {
           toast.warning(message);
           break;
         default:
-          toast(message); // По умолчанию обычное уведомление
+          toast(message);
       }
 
       // Очищаем состояние навигации
@@ -36,9 +36,6 @@ const Navbar = () => {
     }
   }, [location.state, navigate, location.pathname]);
 
-  const hiddenRoutes = ['/create-exam', '/manage-subject-list'];
-
-  const shouldRenderAdditionalButton = !hiddenRoutes.includes(location.pathname);
 
   const isOnCreateExamPage = location.pathname === '/create-exam';
   const isOnManageSubjectListPage = location.pathname === '/manage-subject-list';
@@ -77,16 +74,6 @@ const Navbar = () => {
       <div className="container">
         <h1 className="navbar-brand mb-0 h2 text-white">NARXOZ UNIVERSITY</h1>
         <div className="d-flex gap-3 align-items-center">
-          {shouldRenderAdditionalButton && (
-            <button
-              onClick={() => navigate('/subjects')}
-              className="btn btn-light text-red d-flex align-items-center gap-2"
-              style={{ color: '#C8102E' }}
-            >
-              <List size={20} />
-              <span>Предметы</span>
-            </button>
-          )}
           <button
             onClick={additionalButtonAction}
             className="btn btn-light text-red d-flex align-items-center gap-2"
