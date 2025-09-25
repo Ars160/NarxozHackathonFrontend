@@ -17,7 +17,7 @@ const ListOfStudentsCRN = () => {
       const response = await fetch(`http://localhost:5000/section/${sectionId}`);
       if (!response.ok) throw new Error('Failed to fetch section info');
       const data = await response.json();
-
+      
       const uniqueRooms = [...new Set(data.students.map(student => student.room))].join(', ');
       
       setSectionInfo({

@@ -44,25 +44,31 @@ const ManageDatesModal = ({ show, onClose, dates, onComplete }) => {
   };
   
   const handleAddCustomDate = async () => {
-    if (!customDate) {
-      toast.warning('Выберите дату для добавления');
-      return;
-    }
-    
-    setIsLoading(true);
-    try {
-      const response = await scheduleApi.addCustomDate(customDate); // Добавлен await
-      const data = response;
-      updateDatesWithSort(data.dates);
-      setCustomDate('');
-      toast.success(`Дата ${customDate} успешно добавлена`);
-    } catch (error) {
-      console.error('Error adding date:', error);
-      toast.error('Ошибка при добавлении даты');
-    } finally {
-      setIsLoading(false);
-    }
-  };
+  if (!customDate) {
+    toast.warning('Выберите дату для добавления');
+    return;
+  }
+
+  if (selectedDates.includes(customDate)) {
+    toast.info(`Дата ${customDate} уже существует`);
+    return;
+  }
+
+  setIsLoading(true);
+  try {
+    const response = await scheduleApi.addCustomDate(customDate);
+    const data = response;
+    updateDatesWithSort(data.dates);
+    setCustomDate('');
+    toast.success(`Дата ${customDate} успешно добавлена`);
+  } catch (error) {
+    console.error('Error adding date:', error);
+    toast.error('Ошибка при добавлении даты');
+  } finally {
+    setIsLoading(false);
+  }
+};
+
   
   const handleRestoreDates = async () => {
     setIsLoading(true);

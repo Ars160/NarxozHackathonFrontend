@@ -150,7 +150,7 @@ const ManagePredSubjectList = () => {
           return { 
             ...group, 
             has_exam: checked,
-            has_proctor: checked ? true : false,
+            has_proctor: checked ? group.has_proctor : false,
             two_rooms_needed: checked ? group.two_rooms_needed : false // Используем two_rooms_needed
           };
         }

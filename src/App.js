@@ -176,7 +176,6 @@ const filterData = useCallback((data) => {
     try {
       setLoading(true);
       const data = await scheduleApi.getStudentSchedule(id);
-      console.log(data);
       
       const sanitizedData = data.map(item => {
         const newItem = {...item};
@@ -234,8 +233,6 @@ const filterData = useCallback((data) => {
 
   useEffect(() => {
     const dataToFilter = selectedView === 'general' ? scheduleData : studentSchedule;
-    console.log(dataToFilter);
-    
     setFilteredData(filterData(dataToFilter));
   }, [filterCriteria, selectedView, scheduleData, studentSchedule, filterData]);
 
