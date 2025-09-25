@@ -26,7 +26,6 @@ const AdminManagePage = () => {
     const fetchSubAdmins = async () => {
       try {
         const data = await scheduleApi.getSubAdminsStatus();
-        console.log('Backend data:', data);
 
         // Обновляем статус для ролей, полученных с бэкенда
         setSubAdmins(

@@ -56,7 +56,7 @@ const ManagePredSubjectList = () => {
               EduProgram: eduProgram,
               has_exam: group.has_exam ?? true,
               has_proctor: group.has_proctor ?? true,
-              has_room: group.has_room ?? false
+              two_rooms_needed: group.two_rooms_needed ?? false // Используем two_rooms_needed
             })));
           }
         }
@@ -125,18 +125,15 @@ const ManagePredSubjectList = () => {
   const handleReady = async () => {
     if (!window.confirm('Подтвердить готовность?')) return;
     const userRole = localStorage.getItem('role');
-    console.log(userRole);
     
     const allowedRoles = ['admin-gum', 'admin-sdt', 'admin-sem', 'admin-spigu'];
     if (!allowedRoles.includes(userRole)) {
-      toast.error('Доступ запрещен: требуется роль администратора');
+      toast.error('Эта функция доступна только для subAdmin');
       return;
     }
     setReadyLoading(true);
     try {
-      await scheduleApi.setSubAdminStatus({
-        status: "ready"
-      })
+      await scheduleApi.setSubAdminStatus({ status: 'ready' });
       toast.success('Готово отправлено');
       navigate('/');
     } catch (error) {
@@ -154,7 +151,7 @@ const ManagePredSubjectList = () => {
             ...group, 
             has_exam: checked,
             has_proctor: checked ? true : false,
-            has_room: checked ? group.has_room : false
+            two_rooms_needed: checked ? group.two_rooms_needed : false // Используем two_rooms_needed
           };
         }
         return group;
@@ -170,7 +167,7 @@ const ManagePredSubjectList = () => {
         });
         
         await scheduleApi.updateRoomReqStatus({
-          exams: [{ section_id: sectionId, has_room: false }]
+          exams: [{ section_id: sectionId, two_rooms_needed: false }]
         });
       } else {
         await scheduleApi.updateProctorStatus({
@@ -218,12 +215,17 @@ const ManagePredSubjectList = () => {
       }));
     }
   };
-  
+
   const handleRoomReqToggle = async (sectionId, checked) => {
     try {
       console.log(checked);
       
       const group = subjectGroups[selectedSubject].find(g => g.Section === sectionId);
+      
+      if (!group) {
+        toast.error('Секция не найдена');
+        return;
+      }
       
       if (checked && !group.has_exam) {
         toast.warning('Нельзя включить требование аудитории без экзамена');
@@ -267,7 +269,7 @@ const ManagePredSubjectList = () => {
         const proctorAndRoomUpdates = subjectGroups[selectedSubject].map(group => ({
           section_id: group.Section,
           has_proctor: false,
-          has_room: false
+          two_rooms_needed: false // Используем two_rooms_needed
         }));
 
         await Promise.all([
@@ -280,7 +282,7 @@ const ManagePredSubjectList = () => {
           scheduleApi.updateRoomReqStatus({ 
             exams: proctorAndRoomUpdates.map(item => ({ 
               section_id: item.section_id, 
-              has_room: item.has_room
+              two_rooms_needed: item.two_rooms_needed
             }))
           })
         ]);
@@ -297,7 +299,7 @@ const ManagePredSubjectList = () => {
         ...group,
         has_exam: enable,
         has_proctor: enable ? true : false,
-        has_room: enable ? group.has_room : false
+        two_rooms_needed: enable ? group.two_rooms_needed : false // Используем two_rooms_needed
       }));
 
       setSubjectGroups(prev => ({
@@ -306,7 +308,6 @@ const ManagePredSubjectList = () => {
       }));
 
       toast.success(`Все экзамены ${enable ? 'включены' : 'отключены'}`);
-
     } catch (error) {
       toast.error('Ошибка обновления статуса экзаменов');
     }
@@ -341,7 +342,6 @@ const ManagePredSubjectList = () => {
       }));
 
       toast.success(`Все прокторы ${enable ? 'включены' : 'отключены'}`);
-
     } catch (error) {
       toast.error('Ошибка обновления статуса прокторов');
     }
@@ -360,14 +360,14 @@ const ManagePredSubjectList = () => {
 
       const roomUpdates = groupsWithExam.map(group => ({
         section_id: group.Section,
-        has_room: enable
+        two_rooms_needed: enable // Используем two_rooms_needed
       }));
 
       await scheduleApi.updateRoomReqStatus({ exams: roomUpdates });
 
       const updatedGroups = subjectGroups[selectedSubject].map(group => ({
         ...group,
-        has_room: group.has_exam ? enable : false
+        two_rooms_needed: group.has_exam ? enable : false // Используем two_rooms_needed
       }));
 
       setSubjectGroups(prev => ({
@@ -376,7 +376,6 @@ const ManagePredSubjectList = () => {
       }));
 
       toast.success(`Все требования аудиторий ${enable ? 'включены' : 'отключены'}`);
-
     } catch (error) {
       toast.error('Ошибка обновления требований аудиторий');
     }
@@ -448,11 +447,11 @@ const ManagePredSubjectList = () => {
                       {subjectGroups[selectedSubject].filter(g => g.has_exam).every(g => g.has_proctor) ? 'Отключить всех прокторов' : 'Включить всех прокторов'}
                     </button>
                     <button
-                      onClick={() => handleToggleAllRooms(!subjectGroups[selectedSubject].every(g => g.has_exam && g.has_room))}
+                      onClick={() => handleToggleAllRooms(!subjectGroups[selectedSubject].every(g => g.has_exam && g.two_rooms_needed))}
                       className="btn btn-red"
                       disabled={!subjectGroups[selectedSubject].some(g => g.has_exam)}
                     >
-                      {subjectGroups[selectedSubject].filter(g => g.has_exam).every(g => g.has_room) ? 'Отключить все аудитории' : 'Включить все аудитории'}
+                      {subjectGroups[selectedSubject].filter(g => g.has_exam).every(g => g.two_rooms_needed) ? 'Отключить все аудитории' : 'Включить все аудитории'}
                     </button>
                   </div>
                   <button
@@ -504,7 +503,7 @@ const ManagePredSubjectList = () => {
                         <td className="text-center">
                           <Form.Check 
                             type="switch"
-                            checked={group.has_room}
+                            checked={group.two_rooms_needed} // Используем two_rooms_needed
                             onChange={(e) => handleRoomReqToggle(group.Section, e.target.checked)}
                             disabled={!group.has_exam}
                           />

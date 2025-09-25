@@ -8,14 +8,32 @@ import { scheduleApi } from '../services/Api';
 import { toast } from 'react-toastify';
 import { useNavigate } from 'react-router-dom';
 
-
 const CreateExamPage = () => {
   const [showModal, setShowModal] = useState(false);
   const [sessions, setSessions] = useState([]);
+  const [canCreateExam, setCanCreateExam] = useState(true);
   const navigate = useNavigate();
 
-  const handleCreateExam = () => {
-    setShowModal(true);
+  const checkDrafts = useCallback(async () => {
+    try {
+      const response = await scheduleApi.getDraftStatus();
+      if (response.have_drafts) {
+        setCanCreateExam(false);
+        navigate('/admin-manage-list', {
+          state: { message: 'Вы уже создали экзамен. Завершите его перед созданием нового.', type: 'error' },
+        });
+      } else {
+        setCanCreateExam(true);
+        setShowModal(true);
+      }
+    } catch (err) {
+      toast.error('Ошибка при проверке черновиков');
+      console.error('Ошибка при проверке черновиков:', err);
+    }
+  }, [navigate]);
+
+  const handleCreateExam = async () => {
+    await checkDrafts();
   };
 
   const handleCloseModal = () => {
@@ -23,15 +41,15 @@ const CreateExamPage = () => {
   };
 
   const fetchSessions = useCallback(async () => {
-      try {
-        const data = await scheduleApi.getSessions();
-        setSessions(data);
-        toast.success('Сессии успешно загружено');
-      } catch (err) {
-        toast.error('Ошибка при загрузке сессий');
-        console.error(err);
-      }
-    }, []);
+    try {
+      const data = await scheduleApi.getSessions();
+      setSessions(data);
+      toast.success('Сессии успешно загружено');
+    } catch (err) {
+      toast.error('Ошибка при загрузке сессий');
+      console.error(err);
+    }
+  }, []);
 
   const handleActiveSession = useCallback(async (sessionId) => {
     try {
@@ -41,7 +59,7 @@ const CreateExamPage = () => {
       toast.error('Ошибка при активации сессии');
       console.error('Ошибка при активации сессии:', err);
     }
-  }, [navigate]);  
+  }, [navigate]);
 
   const deleteSession = useCallback(async (sessionId, title) => {
     if (window.confirm('Вы уверены, что хотите удалить эту сессию?')) {
@@ -55,13 +73,10 @@ const CreateExamPage = () => {
       }
     }
   }, [fetchSessions]);
-    
 
-    useEffect(() => {
-      fetchSessions();
-    }, [fetchSessions]);
-
-    
+  useEffect(() => {
+    fetchSessions();
+  }, [fetchSessions]);
 
   return (
     <div className="container-fluid p-0 min-vh-100">
@@ -77,8 +92,11 @@ const CreateExamPage = () => {
                 style={{
                   backgroundColor: '#C8102E',
                   borderColor: '#C8102E',
-                  color: 'white'
+                  color: 'white',
+                  cursor: canCreateExam ? 'pointer' : 'not-allowed',
+                  opacity: canCreateExam ? 1 : 0.6
                 }}
+                disabled={!canCreateExam}
               >
                 <ClipboardList size={20} />
                 <span className="fs-5">Создать экзамен</span>
@@ -120,7 +138,7 @@ const CreateExamPage = () => {
                         
                         <td data-label="Активация">
                           <button
-                           onClick={() => handleActiveSession(session.id)}
+                            onClick={() => handleActiveSession(session.id)}
                             className="btn btn-blue btn-sm d-inline-flex align-items-center"
                           >
                             <LogIn size={16} className="me-1" />
@@ -140,15 +158,14 @@ const CreateExamPage = () => {
                     ))
                   ) : (
                     <tr>
-                    <td colSpan="6" className="text-center py-4 text-muted">
-                      <div className="d-flex flex-column align-items-center">
-                        <span className="h5 mb-3">&#128533;</span>
-                        Нет данных для отображения
-                      </div>
-                    </td>
-                  </tr>
+                      <td colSpan="6" className="text-center py-4 text-muted">
+                        <div className="d-flex flex-column align-items-center">
+                          <span className="h5 mb-3">&#128533;</span>
+                          Нет данных для отображения
+                        </div>
+                      </td>
+                    </tr>
                   )}
-                  
                 </tbody>
               </table>
             </div>
