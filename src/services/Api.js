@@ -106,6 +106,20 @@ export const scheduleApi = {
     }
   },
 
+  sendEmailsSubadmin: async() => {
+    try{
+      const response = await fetch(`${BASE_URL}/api/send_emails_admins`,
+        authHeaders()
+      );
+      if(!response.ok)
+        throw new Error('Network response was not ok');
+      return await response.json();
+    } catch (error) {
+      console.error('Error send emails message:', error);
+      throw error;
+    }
+  },
+
   manageDates: async (action, dateData) => {
     try {
       const response = await fetch(`${BASE_URL}/api/manage_dates`, {

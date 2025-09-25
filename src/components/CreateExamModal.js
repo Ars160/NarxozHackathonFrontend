@@ -35,7 +35,7 @@ const CreateExamModal = ({ show, onClose}) => {
 
     try {
       const response = await scheduleApi.createExam(formData);
-      
+
       // If we have dates in the response, show the dates modal
       if (response && response.dates) {
         setExamDates(response.dates);
@@ -58,9 +58,10 @@ const CreateExamModal = ({ show, onClose}) => {
     }
   };
 
-  const handleDatesComplete = () => {
+  const handleDatesComplete = async () => {
     setShowDatesModal(false);
     onClose();
+    await scheduleApi.sendEmailsSubadmin()
     navigate('/admin-manage-list', {
       state: {
         message: `Экзамен успешно создан и даты настроены!`,
