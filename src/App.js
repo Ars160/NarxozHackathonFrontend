@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Calendar, Search, User, Download, ArrowUpDown, LogIn, Filter, UserPlus } from 'lucide-react';
 import { toast } from 'react-toastify';
@@ -6,7 +6,6 @@ import 'bootstrap/dist/css/bootstrap.min.css';
 import { scheduleApi } from './services/Api';
 import './styles/style.css';
 import Navbar from './components/NavBar';
-import EditExamModal from './components/EditExamModal';
 import AssignProctorModal from './components/AssignProctorModal';
 
 const ExamScheduler = () => {
@@ -27,7 +26,6 @@ const ExamScheduler = () => {
   });
   const [sortConfig, setSortConfig] = useState({ key: null, direction: 'ascending' });
   const navigate = useNavigate();
-  const [editingExam, setEditingExam] = useState(null);
 
   const [showModal, setShowModal] = useState(false);
 
@@ -85,7 +83,7 @@ const filterData = useCallback((data) => {
     const matchesTime = exam.Time_Slot.toLowerCase().includes(timeFilter.toLowerCase());
 
     // Фильтр по проктору
-    const proctorFilter = filterCriteria.proctor.trim();
+    const proctorFilter = filterCriteria.proctor.trim().toLowerCase();
     const proctorValue = exam.Proctor ? exam.Proctor.toString().toLowerCase() : '';
     const matchesProctor = !proctorFilter || proctorValue.includes(proctorFilter);
 
@@ -178,6 +176,7 @@ const filterData = useCallback((data) => {
     try {
       setLoading(true);
       const data = await scheduleApi.getStudentSchedule(id);
+      console.log(data);
       
       const sanitizedData = data.map(item => {
         const newItem = {...item};
@@ -235,6 +234,8 @@ const filterData = useCallback((data) => {
 
   useEffect(() => {
     const dataToFilter = selectedView === 'general' ? scheduleData : studentSchedule;
+    console.log(dataToFilter);
+    
     setFilteredData(filterData(dataToFilter));
   }, [filterCriteria, selectedView, scheduleData, studentSchedule, filterData]);
 
@@ -362,14 +363,6 @@ const filterData = useCallback((data) => {
                 </span>
               </td>
               <td data-label="Проктор">{exam.Proctor}</td>
-              {/* <td data-label="Редактировать">
-                <button 
-                  onClick={() => setEditingExam(exam)}
-                  className="btn btn-blue btn-sm d-inline-flex align-items-center">
-                  <EditIcon size={16} className="me-1" />
-                  Редактировать
-                </button>
-              </td> */}
               <td data-label="Вход">
                 <button
                   onClick={() => handleEntryClick(exam)}
@@ -472,21 +465,6 @@ const filterData = useCallback((data) => {
               </div>
             </div>
           )}
-
-{editingExam && (
-      <EditExamModal
-        exam={editingExam}
-        onClose={() => setEditingExam(null)}
-        onSave={(updatedExam) => {
-          // Обновляем данные в таблице
-          setFilteredData(prev => 
-            prev.map(item => 
-              item.id === updatedExam.id ? updatedExam : item
-            )
-          );
-        }}
-      />
-    )}
         </div>
 
         {renderFilterSection()}
