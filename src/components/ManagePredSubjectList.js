@@ -18,6 +18,7 @@ const ManagePredSubjectList = () => {
   const [isGroupsOpen, setIsGroupsOpen] = useState(false);
   const [groupsLoading, setGroupsLoading] = useState(false);
   const [readyLoading, setReadyLoading] = useState(false);
+  const [pendingChanges, setPendingChanges] = useState({});
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -51,13 +52,18 @@ const ManagePredSubjectList = () => {
       if (data.groups && typeof data.groups === 'object') {
         for (const eduProgram in data.groups) {
           if (Array.isArray(data.groups[eduProgram])) {
-            groupsArray.push(...data.groups[eduProgram].map(group => ({
-              ...group,
-              EduProgram: eduProgram,
-              has_exam: group.has_exam ?? true,
-              has_proctor: group.has_proctor ?? true,
-              two_rooms_needed: group.two_rooms_needed ?? false // Используем two_rooms_needed
-            })));
+            groupsArray.push(...data.groups[eduProgram].map(group => {
+              // Применяем локальные изменения, если они есть
+              const localChanges = pendingChanges[group.Section] || {};
+              
+              return {
+                ...group,
+                EduProgram: eduProgram,
+                has_exam: localChanges.has_exam ?? group.has_exam ?? true,
+                has_proctor: localChanges.has_proctor ?? group.has_proctor ?? true,
+                two_rooms_needed: localChanges.two_rooms_needed ?? group.two_rooms_needed ?? false
+              };
+            }));
           }
         }
       }
@@ -123,136 +129,136 @@ const ManagePredSubjectList = () => {
   };
 
   const handleReady = async () => {
-    if (!window.confirm('Подтвердить готовность?')) return;
-    const userRole = localStorage.getItem('role');
-    
-    const allowedRoles = ['admin-gum', 'admin-sdt', 'admin-sem', 'admin-spigu'];
-    if (!allowedRoles.includes(userRole)) {
-      toast.error('Эта функция доступна только для subAdmin');
-      return;
-    }
-    setReadyLoading(true);
-    try {
-      await scheduleApi.setSubAdminStatus({ status: 'ready' });
-      toast.success('Готово отправлено');
-      navigate('/');
-    } catch (error) {
-      toast.error('Ошибка при отправке готовности');
-    } finally {
-      setReadyLoading(false);
-    }
-  };
+  if (!window.confirm('Подтвердить готовность?')) return;
 
-  const handleExamToggle = async (sectionId, checked) => {
-    try {
-      const updatedGroups = subjectGroups[selectedSubject].map(group => {
-        if (group.Section === sectionId) {
-          return { 
-            ...group, 
-            has_exam: checked,
-            has_proctor: checked ? group.has_proctor : false,
-            two_rooms_needed: checked ? group.two_rooms_needed : false // Используем two_rooms_needed
-          };
+  const userRole = localStorage.getItem('role');
+  const allowedRoles = ['admin-gum', 'admin-sdt', 'admin-sem', 'admin-spigu'];
+  if (!allowedRoles.includes(userRole)) {
+    toast.error('Эта функция доступна только для subAdmin');
+    return;
+  }
+
+  setReadyLoading(true);
+  try {
+    // Собираем массив изменений
+    const examsPayload = Object.entries(pendingChanges).map(([sectionId, changes]) => ({
+      section_id: sectionId,
+      has_exam: changes.has_exam,
+      has_proctor: changes.has_proctor,
+      two_rooms_needed: changes.two_rooms_needed
+    }));
+
+    if (examsPayload.length > 0) {
+      // Можно отправить одним эндпоинтом, если бэкенд умеет
+      await scheduleApi.updateExamBatch({ exams: examsPayload });
+    }
+
+    // Отправляем статус готовности
+    await scheduleApi.setSubAdminStatus({ status: 'ready' });
+
+    toast.success('Изменения сохранены и готовность отправлена');
+    setPendingChanges({});
+    navigate('/');
+  } catch (error) {
+    toast.error('Ошибка при отправке');
+  } finally {
+    setReadyLoading(false);
+  }
+};
+
+
+  const handleExamToggle = (sectionId, checked) => {
+  // Обновляем локальный state
+  const updatedGroups = subjectGroups[selectedSubject].map(group =>
+    group.Section === sectionId
+      ? { 
+          ...group, 
+          has_exam: checked,
+          has_proctor: checked ? group.has_proctor : false,
+          two_rooms_needed: checked ? group.two_rooms_needed : false
         }
-        return group;
-      });
+      : group
+  );
 
-      await scheduleApi.updateExamStatus({
-        exams: [{ section_id: sectionId, has_exam: checked }]
-      });
+  setSubjectGroups(prev => ({
+    ...prev,
+    [selectedSubject]: updatedGroups
+  }));
 
-      if (!checked) {
-        await scheduleApi.updateProctorStatus({
-          exams: [{ section_id: sectionId, has_proctor: false }]
-        });
-        
-        await scheduleApi.updateRoomReqStatus({
-          exams: [{ section_id: sectionId, two_rooms_needed: false }]
-        });
-      } else {
-        await scheduleApi.updateProctorStatus({
-          exams: [{ section_id: sectionId, has_proctor: true }]
-        });
-      }
-
-      setSubjectGroups(prev => ({
-        ...prev,
-        [selectedSubject]: updatedGroups
-      }));
-      
-    } catch (error) {
-      toast.error('Ошибка обновления статуса экзамена');
+  // Добавляем изменения в pendingChanges
+  setPendingChanges(prev => ({
+    ...prev,
+    [sectionId]: {
+      ...(prev[sectionId] || {}),
+      has_exam: checked,
+      // Если экзамен выключен — сразу гасим зависимые
+      has_proctor: checked ? (prev[sectionId]?.has_proctor ?? true) : false,
+      two_rooms_needed: checked ? (prev[sectionId]?.two_rooms_needed ?? false) : false
     }
-  };
+  }));
+};
 
-  const handleProctorToggle = async (sectionId, checked) => {
-    try {
-      const group = subjectGroups[selectedSubject].find(g => g.Section === sectionId);
-      
-      if (checked && !group.has_exam) {
-        toast.warning('Нельзя включить проктора без экзамена');
-        return;
-      }
-  
-      const updatedGroups = subjectGroups[selectedSubject].map(group => 
-        group.Section === sectionId ? { ...group, has_proctor: checked } : group
-      );
-  
-      setSubjectGroups(prev => ({
-        ...prev,
-        [selectedSubject]: updatedGroups
-      }));
-  
-      await scheduleApi.updateProctorStatus({
-        exams: [{ section_id: sectionId, has_proctor: checked }]
-      });
-  
-    } catch (error) {
-      toast.error('Ошибка обновления статуса проктора');
-      setSubjectGroups(prev => ({
-        ...prev,
-        [selectedSubject]: subjectGroups[selectedSubject]
-      }));
-    }
-  };
 
-  const handleRoomReqToggle = async (sectionId, checked) => {
-    try {
-      console.log(checked);
-      
-      const group = subjectGroups[selectedSubject].find(g => g.Section === sectionId);
-      
-      if (!group) {
-        toast.error('Секция не найдена');
-        return;
-      }
-      
-      if (checked && !group.has_exam) {
-        toast.warning('Нельзя включить требование аудитории без экзамена');
-        return;
-      }
-  
-      const updatedGroups = subjectGroups[selectedSubject].map(group => 
-        group.Section === sectionId ? { ...group, two_rooms_needed: checked } : group
-      );
-  
-      setSubjectGroups(prev => ({
-        ...prev,
-        [selectedSubject]: updatedGroups
-      }));
-  
-      await scheduleApi.updateRoomReqStatus({
-        exams: [{ section_id: sectionId, two_rooms_needed: checked }]
-      });
-  
-    } catch (error) {
-      toast.error('Ошибка обновления требования аудитории');
-      setSubjectGroups(prev => ({
-        ...prev,
-        [selectedSubject]: subjectGroups[selectedSubject]
-      }));
+  const handleProctorToggle = (sectionId, checked) => {
+  const group = subjectGroups[selectedSubject].find(g => g.Section === sectionId);
+
+  if (checked && !group.has_exam) {
+    toast.warning('Нельзя включить проктора без экзамена');
+    return;
+  }
+
+  const updatedGroups = subjectGroups[selectedSubject].map(group =>
+    group.Section === sectionId ? { ...group, has_proctor: checked } : group
+  );
+
+  setSubjectGroups(prev => ({
+    ...prev,
+    [selectedSubject]: updatedGroups
+  }));
+
+  // Фиксируем изменения локально
+  setPendingChanges(prev => ({
+    ...prev,
+    [sectionId]: {
+      ...(prev[sectionId] || {}),
+      has_proctor: checked
     }
-  };
+  }));
+};
+
+
+  const handleRoomReqToggle = (sectionId, checked) => {
+  const group = subjectGroups[selectedSubject].find(g => g.Section === sectionId);
+
+  if (!group) {
+    toast.error('Секция не найдена');
+    return;
+  }
+
+  if (checked && !group.has_exam) {
+    toast.warning('Нельзя включить требование аудитории без экзамена');
+    return;
+  }
+
+  const updatedGroups = subjectGroups[selectedSubject].map(group =>
+    group.Section === sectionId ? { ...group, two_rooms_needed: checked } : group
+  );
+
+  setSubjectGroups(prev => ({
+    ...prev,
+    [selectedSubject]: updatedGroups
+  }));
+
+  // Фиксируем изменения локально
+  setPendingChanges(prev => ({
+    ...prev,
+    [sectionId]: {
+      ...(prev[sectionId] || {}),
+      two_rooms_needed: checked
+    }
+  }));
+};
+
 
   const handleToggleAllExams = async (enable) => {
     if (!selectedSubject) return;

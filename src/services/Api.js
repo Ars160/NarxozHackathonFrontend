@@ -338,6 +338,31 @@ export const scheduleApi = {
     }
   },
 
+  updateExamBatch: async (data) => {
+    try {
+      const response = await fetch(`${BASE_URL}/api/exams/batch-update`, {
+        method: 'POST',
+        headers: {
+          ...authHeaders().headers,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(data)
+      });
+      
+      const responseData = await response.json();
+      
+      if (!response.ok) {
+        // If the server returns an error message, use it
+        throw new Error(responseData.message || `Ошибка HTTP: ${response.status}`);
+      }
+      
+      return responseData;
+    } catch (error) {
+      console.error('Error updating exam status:', error);
+      throw error;
+    }
+  },
+
   updateExamStatus: async (data) => {
     try {
       const response = await fetch(`${BASE_URL}/api/update_exam_status`, {

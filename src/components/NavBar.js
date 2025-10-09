@@ -72,7 +72,7 @@ const Navbar = () => {
         theme="light"
       />
       <div className="container">
-        <h1 className="navbar-brand mb-0 h2 text-white">NARXOZ UNIVERSITY</h1>
+        <h1 className="navbar-brand mb-0 h2 text-white">GENERATION EXAM</h1>
         <div className="d-flex gap-3 align-items-center">
           <button
             onClick={additionalButtonAction}
