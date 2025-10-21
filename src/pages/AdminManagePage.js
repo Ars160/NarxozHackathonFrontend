@@ -26,12 +26,16 @@ const AdminManagePage = () => {
     const fetchSubAdmins = async () => {
       try {
         const data = await scheduleApi.getSubAdminsStatus();
+        console.log(data.has_drafts);
+        
+        if(!data.has_drafts){
+          navigate('/')
+        }
 
-        // Обновляем статус для ролей, полученных с бэкенда
         setSubAdmins(
           defaultAdmins.map((defaultAdmin) => {
-            const backendAdmin = Array.isArray(data)
-              ? data.find((admin) => admin.role.toLowerCase() === defaultAdmin.role.toLowerCase())
+            const backendAdmin = Array.isArray(data.statuses)
+              ? data.statuses.find((admin) => admin.role.toLowerCase() === defaultAdmin.role.toLowerCase())
               : null;
             return backendAdmin
               ? { ...defaultAdmin, ready: backendAdmin.status === 'ready' }

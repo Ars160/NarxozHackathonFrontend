@@ -27,8 +27,29 @@ const ManagePredSubjectList = () => {
 
   const fetchSubjects = async () => {
     try {
+      const data = await scheduleApi.getSubAdminsStatus();
+
+      if (!data.has_drafts) {
+        navigate("/");
+        return;
+      }
+
+      if (Array.isArray(data.subAdmins)) {
+        const currentRole = localStorage.getItem("role");
+
+        const found = data.subAdmins.find(
+          (item) => item.role === currentRole && item.status === "ready"
+        );
+
+        if (found) {
+          navigate("/", { state: { message: "Вы уже сделали свою школу", type: "info" } });
+          return;
+        }
+      }
+
       const subjects = await scheduleApi.getSubjects();
       setSubjects(Array.isArray(subjects) ? subjects : []);
+
     } catch (error) {
       toast.error('Ошибка при загрузке списка предметов');
       setSubjects([]);
