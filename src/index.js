@@ -9,6 +9,7 @@ import Login from './components/Login';
 import Register from './components/Register';
 import ProtectedRoute from './components/ProtectedRoute';
 import AdminManagePage from './pages/AdminManagePage'
+import AdminDashboard from './components/AdminDashboard';
 
 const el = document.getElementById('root');
 const root = ReactDOM.createRoot(el);
@@ -55,6 +56,14 @@ root.render(
                 element={
                     <ProtectedRoute>
                         <AdminManagePage />
+                    </ProtectedRoute>
+                }
+            />
+            <Route
+                path="/admin-dashboard"
+                element={
+                    <ProtectedRoute>
+                        <AdminDashboard />
                     </ProtectedRoute>
                 }
             />

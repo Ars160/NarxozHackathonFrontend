@@ -103,16 +103,9 @@ const ListOfStudentsCRN = () => {
       <div className="container mt-4">
         {/* Header Section */}
         <div className="d-flex flex-column flex-lg-row justify-content-between gap-3 mb-4">
-          <button
-            onClick={() => navigate(-1)}
-            className="btn btn-outline-red d-flex align-items-center gap-2"
-            style={{ color: '#C8102E', borderColor: '#C8102E' }}
-          >
-            <ArrowLeft size={20} />
-            Назад к расписанию
-          </button>
+         
           
-          <div className="d-flex gap-3">
+          <div className="d-flex gap-3 ">
             <div className="position-relative">
               <input
                 type="text"

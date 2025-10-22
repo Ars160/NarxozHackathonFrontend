@@ -1,19 +1,19 @@
 import { useEffect } from 'react';
-import { Home, ClipboardList } from 'lucide-react';
+import { Home, ClipboardList, LayoutDashboard } from 'lucide-react';
 import { useNavigate, useLocation } from 'react-router-dom';
+import { Link } from 'react-router-dom';
 import { ToastContainer, toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 
 const Navbar = () => {
   const navigate = useNavigate();
   const location = useLocation();
+  const getRole = localStorage.getItem('role');
 
-  // Отображение уведомления при переходе
   useEffect(() => {
     if (location.state?.message) {
       const { message, type = 'success' } = location.state;
 
-      // Отображаем уведомление в зависимости от типа
       switch (type) {
         case 'success':
           toast.success(message);
@@ -31,7 +31,6 @@ const Navbar = () => {
           toast(message);
       }
 
-      // Очищаем состояние навигации
       navigate(location.pathname, { replace: true, state: {} });
     }
   }, [location.state, navigate, location.pathname]);
@@ -39,8 +38,16 @@ const Navbar = () => {
 
   const isOnCreateExamPage = location.pathname === '/create-exam';
   const isOnManageSubjectListPage = location.pathname === '/manage-subject-list';
+  const isOnListOfCRN = location.pathname.startsWith('/section/');
 
-  const additionalButtonText = isOnCreateExamPage ? 'Главная страница' : 'Экзамены';
+  let additionalButtonText = 'Экзамены';
+
+  if (isOnCreateExamPage || location.pathname === '/admin-dashboard' || isOnListOfCRN) {
+    additionalButtonText = 'Главная страница';
+  }
+
+  const adminDashboardiSVisible = location.pathname === '/' && getRole === 'admin';
+  
   const additionalButtonAction = isOnCreateExamPage
     ? () => navigate('/')
     : () => {
@@ -51,11 +58,16 @@ const Navbar = () => {
           if (confirmNavigation) {
             navigate('/create-exam');
           }
+        } else if(location.pathname === '/admin-dashboard') {
+          navigate('/');
+        } else if(isOnListOfCRN) {
+          navigate(-1);
         } else {
           navigate('/create-exam');
         }
       };
   const additionalButtonIcon = isOnCreateExamPage ? <Home size={20} /> : <ClipboardList size={20} />;
+  const adminDashboardButton = <LayoutDashboard size={20} />;
 
   return (
     <nav className="navbar navbar-expand-lg bg-red text-white py-3 shadow-sm" style={{ backgroundColor: '#C8102E' }}>
@@ -74,6 +86,16 @@ const Navbar = () => {
       <div className="container">
         <h1 className="navbar-brand mb-0 h2 text-white">GENERATION EXAM</h1>
         <div className="d-flex gap-3 align-items-center">
+          {adminDashboardiSVisible && (
+            <Link
+              to="/admin-dashboard"
+              className="btn btn-light text-red d-flex align-items-center gap-2"
+              style={{ color: '#C8102E' }}
+            >
+              {adminDashboardButton}
+              <span>Админ страница</span>
+            </Link>
+          )}
           <button
             onClick={additionalButtonAction}
             className="btn btn-light text-red d-flex align-items-center gap-2"
