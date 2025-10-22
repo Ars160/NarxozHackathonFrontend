@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'react-toastify';
-import { Search, Trash2, Eye, BookOpen, Users, X } from 'lucide-react';
+import { Search, Trash2, Eye, BookOpen, Users, X, Calendar } from 'lucide-react';
 import { Form, Table } from 'react-bootstrap';
 import 'bootstrap/dist/css/bootstrap.min.css';
 import '../styles/style.css';
@@ -20,14 +20,12 @@ const ManagePredSubjectList = () => {
   const [readyLoading, setReadyLoading] = useState(false);
   const [pendingChanges, setPendingChanges] = useState({});
 
-  // --- Слоты / брони ---
   const [classroomNumber, setClassroomNumber] = useState('107');
   const [freeSlots, setFreeSlots] = useState([]);
   const [slotsLoading, setSlotsLoading] = useState(false);
-  const [selectedSlotForSection, setSelectedSlotForSection] = useState({}); // sectionId -> slotId
-  const [pendingBookings, setPendingBookings] = useState([]); // локальные выборы: { sectionId, slotId, subject }
-  const [commitLoading, setCommitLoading] = useState(false); // загрузка глобального commit
-  // -------------------------------------
+  const [selectedSlotForSection, setSelectedSlotForSection] = useState({});
+  const [pendingBookings, setPendingBookings] = useState([]);
+  const [commitLoading, setCommitLoading] = useState(false);
 
   const navigate = useNavigate();
 
@@ -46,7 +44,6 @@ const ManagePredSubjectList = () => {
 
       if (Array.isArray(data.subAdmins)) {
         const currentRole = localStorage.getItem("role");
-
         const found = data.subAdmins.find(
           (item) => item.role === currentRole && item.status === "ready"
         );
@@ -154,7 +151,6 @@ const ManagePredSubjectList = () => {
           return updatedGroups;
         });
 
-        // удалить локальную бронь, если была
         setPendingBookings(prev => prev.filter(b => b.sectionId !== section));
         
         toast.success(`Секция "${section}" удалена`);
@@ -220,7 +216,6 @@ const ManagePredSubjectList = () => {
       }
 
       await Promise.all(promises);
-
       await scheduleApi.setSubAdminStatus({ status: 'ready' });
 
       setPendingBookings([]);
@@ -263,7 +258,6 @@ const ManagePredSubjectList = () => {
     }));
   };
 
-
   const handleProctorToggle = (sectionId, checked) => {
     const group = subjectGroups[selectedSubject].find(g => g.Section === sectionId);
 
@@ -289,7 +283,6 @@ const ManagePredSubjectList = () => {
       }
     }));
   };
-
 
   const handleRoomReqToggle = (sectionId, checked) => {
     const group = subjectGroups[selectedSubject].find(g => g.Section === sectionId);
@@ -449,7 +442,6 @@ const ManagePredSubjectList = () => {
     }
   };
 
-  // --- слоты ---
   const fetchFreeSlots = async () => {
     if (!classroomNumber) {
       toast.warning('Введите номер аудитории');
@@ -502,7 +494,7 @@ const ManagePredSubjectList = () => {
 
     setFreeSlots(prev => prev.map(s => (String(s.id) === String(slotId) ? { ...s, is_booked: true } : s)));
 
-    toast.info('Слот локально закреплён. Нажмите "Закрепить выбранные" для отправки на сервер.');
+    toast.info('Слот локально закреплён');
   };
 
   const cancelLocalBooking = (sectionId) => {
@@ -533,7 +525,6 @@ const ManagePredSubjectList = () => {
     toast.info('Локальная бронь отменена');
   };
 
-  // --- НОВОЕ: глобальная кнопка "Закрепить выбранные" -> отправляет массив одним POST'ом ---
   const handleCommitBookings = async () => {
     if (pendingBookings.length === 0) {
       toast.info('Нет локально выбранных бронирований');
@@ -544,7 +535,6 @@ const ManagePredSubjectList = () => {
 
     setCommitLoading(true);
     try {
-      // Группируем по slot_id + subject, собираем массив sections
       const map = {};
       pendingBookings.forEach(b => {
         const key = `${b.slotId}::${b.subject}`;
@@ -552,7 +542,7 @@ const ManagePredSubjectList = () => {
         map[key].sections.push(b.sectionId);
       });
 
-      const payload = Object.values(map); // массив объектов { slot_id, subject, sections: [...] }
+      const payload = Object.values(map);
 
       const baseAuth = authHeaders() || {};
       const headers = {
@@ -574,7 +564,6 @@ const ManagePredSubjectList = () => {
 
       await res.json();
 
-      // Успех — пометим группы как окончательно забронированные и очистим pendingBookings
       setSubjectGroups(prev => {
         const updated = { ...prev };
         if (selectedSubject && Array.isArray(updated[selectedSubject])) {
@@ -597,182 +586,215 @@ const ManagePredSubjectList = () => {
       setCommitLoading(false);
     }
   };
-  // -------------------------------------
 
   const filteredSubjects = (subjects || []).filter(subject =>
     subject.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
   return (
-    <div className={`container-fluid p-0 min-vh-100 ${readyLoading ? 'disabled-page' : ''}`}>
+    <div className={`min-vh-100 ${readyLoading ? 'disabled-page' : ''}`} style={{ backgroundColor: '#f8f9fa' }}>
       <Navbar showFilterButton={false} />
       
-      <div className="container mt-4">
+      <div className="container-fluid px-4 py-4">
         {readyLoading && <GlobalLoader />}
         
-        <div className="d-flex flex-column flex-lg-row justify-content-between gap-3 mb-4">
+        {/* Верхняя панель */}
+        <div className="d-flex flex-column flex-lg-row justify-content-between align-items-start align-items-lg-center gap-3 mb-4">
           <button
             onClick={handleReady}
-            className="btn btn-red d-flex gap-2 py-2 px-4"
+            className="btn btn-red d-flex align-items-center gap-2 px-4 py-2 shadow-sm"
             disabled={readyLoading}
+            style={{ minWidth: '160px', fontWeight: '500' }}
           >
             {readyLoading ? (
               <>
-                <span className="spinner-border spinner-border-sm me-2" role="status" />
+                <span className="spinner-border spinner-border-sm" role="status" />
                 Отправка...
               </>
             ) : (
-              'Готово'
+              <>
+                <Calendar size={18} />
+                Готово
+              </>
             )}
           </button>
           
-          <div className="position-relative">
+          <div className="position-relative" style={{ minWidth: '300px' }}>
+            <Search size={20} className="position-absolute top-50 translate-middle-y ms-3 text-muted" />
             <input
               type="text"
               placeholder="Поиск предметов..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="form-control border-red py-2"
-              style={{ borderColor: '#C8102E', paddingLeft: '2.5rem' }}
+              className="form-control ps-5 py-2 shadow-sm"
+              style={{ 
+                borderColor: '#dee2e6',
+                borderRadius: '8px'
+              }}
             />
-            <Search size={20} className="position-absolute top-50 translate-middle-y ms-2 text-muted" />
           </div>
         </div>
 
         {groupsLoading && <LocalLoader />}
 
+        {/* Панель групп предмета */}
         {isGroupsOpen && selectedSubject && (
-          <div className="card shadow-sm mb-4">
-            <div className="card-header bg-white border-bottom p-4 position-relative">
-              <div className="d-flex align-items-center justify-content-between">
-                <h2 className="h4 mb-0 d-flex align-items-center gap-2">
-                  <BookOpen size={24} style={{ color: '#C8102E' }} />
-                  Группы предмета "{selectedSubject}"
-                </h2>
-                <div className="d-flex gap-2 align-items-center">
-                  <div className="input-group me-2">
+          <div className="card shadow-sm mb-4" style={{ borderRadius: '12px', border: 'none' }}>
+            <div className="card-header bg-white p-4" style={{ borderBottom: '2px solid #e9ecef', borderRadius: '12px 12px 0 0' }}>
+              <div className="d-flex flex-column gap-3">
+                <div className="d-flex align-items-center justify-content-between">
+                  <h2 className="h5 mb-0 d-flex align-items-center gap-2 fw-bold">
+                    <BookOpen size={24} style={{ color: '#C8102E' }} />
+                    Группы предмета: <span style={{ color: '#C8102E' }}>"{selectedSubject}"</span>
+                  </h2>
+                  <button
+                    onClick={closeGroups}
+                    className="btn btn-outline-secondary d-flex align-items-center gap-2"
+                    style={{ borderRadius: '8px' }}
+                  >
+                    <X size={18} />
+                    Закрыть
+                  </button>
+                </div>
+
+                {/* Панель управления слотами */}
+                <div className="d-flex flex-wrap gap-2 align-items-center p-3 bg-light rounded">
+                  <div className="input-group" style={{ maxWidth: '320px' }}>
                     <input
                       type="text"
                       className="form-control"
-                      style={{ minWidth: 110 }}
                       value={classroomNumber}
                       onChange={(e) => setClassroomNumber(e.target.value)}
-                      placeholder="Аудитория (например 107)"
+                      placeholder="Номер аудитории"
+                      style={{ borderRadius: '8px 0 0 8px' }}
                     />
-                    <button className="btn btn-outline-secondary" type="button" onClick={fetchFreeSlots} disabled={slotsLoading}>
+                    <button 
+                      className="btn btn-outline-primary" 
+                      onClick={fetchFreeSlots} 
+                      disabled={slotsLoading}
+                      style={{ borderRadius: '0 8px 8px 0' }}
+                    >
                       {slotsLoading ? 'Загрузка...' : 'Загрузить слоты'}
                     </button>
                   </div>
 
-                  {/* НОВАЯ глобальная кнопка — отправит массив бронирований одним POST'ом */}
-                  <div className="me-2">
-                    <button
-                      onClick={handleCommitBookings}
-                      className="btn btn-primary"
-                      disabled={pendingBookings.length === 0 || commitLoading}
-                      title="Отправить все локально закреплённые слоты на сервер"
-                    >
-                      {commitLoading ? (
-                        <>
-                          <span className="spinner-border spinner-border-sm me-2" />
-                          Отправка...
-                        </>
-                      ) : (
-                        `Закрепить выбранные (${pendingBookings.length})`
-                      )}
-                    </button>
-                  </div>
+                  <button
+                    onClick={handleCommitBookings}
+                    className="btn btn-success d-flex align-items-center gap-2 shadow-sm"
+                    disabled={pendingBookings.length === 0 || commitLoading}
+                    style={{ borderRadius: '8px', fontWeight: '500' }}
+                  >
+                    {commitLoading ? (
+                      <>
+                        <span className="spinner-border spinner-border-sm" />
+                        Отправка...
+                      </>
+                    ) : (
+                      <>
+                        <Calendar size={18} />
+                        Закрепить выбранные ({pendingBookings.length})
+                      </>
+                    )}
+                  </button>
 
-                  <div className="btn-group">
+                  <div className="ms-auto d-flex gap-2 flex-wrap">
                     <button
                       onClick={() => handleToggleAllExams(!subjectGroups[selectedSubject].every(g => g.has_exam))}
-                      className="btn btn-red"
+                      className="btn btn-sm btn-outline-primary"
+                      style={{ borderRadius: '8px' }}
                     >
-                      {subjectGroups[selectedSubject].every(g => g.has_exam) ? 'Отключить все экзамены' : 'Включить все экзамены'}
+                      {subjectGroups[selectedSubject].every(g => g.has_exam) ? 'Выкл все экзамены' : 'Вкл все экзамены'}
                     </button>
                     <button
                       onClick={() => handleToggleAllProctors(!subjectGroups[selectedSubject].every(g => g.has_exam && g.has_proctor))}
-                      className="btn btn-red"
+                      className="btn btn-sm btn-outline-primary"
                       disabled={!subjectGroups[selectedSubject].some(g => g.has_exam)}
+                      style={{ borderRadius: '8px' }}
                     >
-                      {subjectGroups[selectedSubject].filter(g => g.has_exam).every(g => g.has_proctor) ? 'Отключить всех прокторов' : 'Включить всех прокторов'}
+                      {subjectGroups[selectedSubject].filter(g => g.has_exam).every(g => g.has_proctor) ? 'Выкл всех прокторов' : 'Вкл всех прокторов'}
                     </button>
                     <button
                       onClick={() => handleToggleAllRooms(!subjectGroups[selectedSubject].every(g => g.has_exam && g.two_rooms_needed))}
-                      className="btn btn-red"
+                      className="btn btn-sm btn-outline-primary"
                       disabled={!subjectGroups[selectedSubject].some(g => g.has_exam)}
+                      style={{ borderRadius: '8px' }}
                     >
-                      {subjectGroups[selectedSubject].filter(g => g.has_exam).every(g => g.two_rooms_needed) ? 'Отключить все аудитории' : 'Включить все аудитории'}
+                      {subjectGroups[selectedSubject].filter(g => g.has_exam).every(g => g.two_rooms_needed) ? 'Выкл все аудитории' : 'Вкл все аудитории'}
                     </button>
                   </div>
-                  <button
-                    onClick={closeGroups}
-                    className="btn btn-red"
-                    style={{ padding: '8px 12px' }}
-                  >
-                    <X size={20} />
-                  </button>
                 </div>
-              </div>
-              <div className="small text-muted mt-2">
-                {freeSlots.length > 0 ? `Загружено ${freeSlots.length} слотов для аудитории ${classroomNumber}` : 'Слоты не загружены'}
-                {pendingBookings.length > 0 && <span className="ms-3 text-success">Локально: {pendingBookings.length}</span>}
+
+                <div className="small text-muted">
+                  {freeSlots.length > 0 ? (
+                    <>✓ Загружено {freeSlots.length} слотов для аудитории {classroomNumber}</>
+                  ) : (
+                    'Слоты не загружены'
+                  )}
+                  {pendingBookings.length > 0 && (
+                    <span className="ms-3 badge bg-success">Локально выбрано: {pendingBookings.length}</span>
+                  )}
+                </div>
               </div>
             </div>
             
-            <div className="card-body p-4">
-              <div className="table-responsive">
-                <Table className="table-hover mb-0">
-                  <thead className="bg-light">
+            {/* Таблица групп с горизонтальным скроллингом */}
+            <div className="card-body p-0">
+              <div style={{ maxHeight: '600px', overflowY: 'auto', overflowX: 'auto' }}>
+                <Table className="mb-0" style={{ minWidth: '1200px' }}>
+                  <thead style={{ position: 'sticky', top: 0, backgroundColor: '#f8f9fa', zIndex: 10, boxShadow: '0 2px 4px rgba(0,0,0,0.05)' }}>
                     <tr>
-                      <th>Секция</th>
-                      <th>Программа</th>
-                      <th>Преподаватель</th>
-                      <th className="text-center">Экзамен</th>
-                      <th className="text-center">Проктор</th>
-                      <th className="text-center">Аудитория на 2</th>
-                      <th className="text-center">Слот</th>
-                      <th className="text-end">Действия</th>
+                      <th className="text-end px-4 py-3" style={{ fontWeight: '600', fontSize: '14px', minWidth: '200px' }}>Действия</th>
                     </tr>
                   </thead>
                   <tbody>
-                    {(subjectGroups[selectedSubject] || []).map((group) => {
+                    {(subjectGroups[selectedSubject] || []).map((group, index) => {
                       const isPendingLocal = pendingBookings.some(b => b.sectionId === group.Section);
                       return (
-                        <tr key={group.Section} className={isPendingLocal ? 'table-success' : ''}>
-                          <td>{group.Section}</td>
-                          <td>{group.EduProgram}</td>
-                          <td>{group.Instructor}</td>
-                          <td className="text-center">
+                        <tr 
+                          key={group.Section} 
+                          style={{ 
+                            backgroundColor: isPendingLocal ? '#d4edda' : index % 2 === 0 ? '#ffffff' : '#f8f9fa',
+                            transition: 'background-color 0.2s'
+                          }}
+                          className="hover-row"
+                        >
+                          <td className="px-4 py-3" style={{ fontWeight: '500' }}>{group.Section}</td>
+                          <td className="px-4 py-3">{group.EduProgram}</td>
+                          <td className="px-4 py-3">{group.Instructor}</td>
+                          <td className="text-center px-3 py-3">
                             <Form.Check 
                               type="switch"
                               checked={group.has_exam}
                               onChange={(e) => handleExamToggle(group.Section, e.target.checked)}
+                              style={{ display: 'inline-block' }}
                             />
                           </td>
-                          <td className="text-center">
+                          <td className="text-center px-3 py-3">
                             <Form.Check 
                               type="switch"
                               checked={group.has_proctor}
                               onChange={(e) => handleProctorToggle(group.Section, e.target.checked)}
                               disabled={!group.has_exam}
+                              style={{ display: 'inline-block' }}
                             />
                           </td>
-                          <td className="text-center">
+                          <td className="text-center px-3 py-3">
                             <Form.Check 
                               type="switch"
                               checked={group.two_rooms_needed}
                               onChange={(e) => handleRoomReqToggle(group.Section, e.target.checked)}
                               disabled={!group.has_exam}
+                              style={{ display: 'inline-block' }}
                             />
                           </td>
 
-                          <td className="text-center" style={{ minWidth: 260 }}>
-                            <div className="d-flex gap-2 justify-content-center align-items-center">
+                          <td className="px-4 py-3">
+                            <div className="d-flex gap-2 align-items-center">
                               <select
                                 className="form-select form-select-sm"
                                 value={selectedSlotForSection[group.Section] ?? (group.bookedSlotId ?? '')}
                                 onChange={(e) => handleSelectSlotForSection(group.Section, e.target.value)}
+                                style={{ borderRadius: '6px', fontSize: '13px' }}
                               >
                                 <option value="">— выбрать слот —</option>
                                 {freeSlots && freeSlots.length > 0 ? freeSlots.map(slot => (
@@ -780,29 +802,33 @@ const ManagePredSubjectList = () => {
                                     {new Date(slot.start_time).toLocaleString()} — {new Date(slot.end_time).toLocaleTimeString()} {slot.is_booked && !isPendingLocal ? '(занят)' : ''}
                                   </option>
                                 )) : (
-                                  <option value="">Нет загруженных слотов</option>
+                                  <option value="">Нет слотов</option>
                                 )}
                               </select>
                               {isPendingLocal && (
-                                <div className="small text-muted">Локально: {pendingBookings.find(b => b.sectionId === group.Section)?.slotId}</div>
+                                <span className="badge bg-success" style={{ fontSize: '11px' }}>
+                                  Локально
+                                </span>
                               )}
                             </div>
                           </td>
 
-                          <td className="text-end">
+                          <td className="text-end px-4 py-3">
                             <div className="d-flex justify-content-end gap-2">
                               {!isPendingLocal ? (
                                 <button
                                   onClick={() => handleBookSlotLocal(group.Section)}
-                                  className="btn btn-blue btn-sm"
+                                  className="btn btn-sm btn-primary"
                                   disabled={!selectedSlotForSection[group.Section]}
+                                  style={{ borderRadius: '6px', fontSize: '13px', minWidth: '80px' }}
                                 >
                                   Закрепить
                                 </button>
                               ) : (
                                 <button
                                   onClick={() => cancelLocalBooking(group.Section)}
-                                  className="btn btn-outline-secondary btn-sm"
+                                  className="btn btn-sm btn-outline-secondary"
+                                  style={{ borderRadius: '6px', fontSize: '13px', minWidth: '80px' }}
                                 >
                                   Отменить
                                 </button>
@@ -810,10 +836,11 @@ const ManagePredSubjectList = () => {
 
                               <button
                                 onClick={() => deleteSection(group.Section)}
-                                className="btn btn-red btn-sm"
+                                className="btn btn-sm btn-danger d-flex align-items-center gap-1"
                                 disabled={isPendingLocal}
+                                style={{ borderRadius: '6px', fontSize: '13px' }}
                               >
-                                <Trash2 size={16} className="me-1" />
+                                <Trash2 size={14} />
                                 Удалить
                               </button>
                             </div>
@@ -828,55 +855,77 @@ const ManagePredSubjectList = () => {
           </div>
         )}
 
-        <div className="card shadow-sm">
-          <div className="card-header bg-white border-bottom p-4">
-            <h2 className="h4 mb-0 d-flex align-items-center gap-2">
+        {/* Таблица предметов */}
+        <div className="card shadow-sm" style={{ borderRadius: '12px', border: 'none' }}>
+          <div className="card-header bg-white p-4" style={{ borderBottom: '2px solid #e9ecef', borderRadius: '12px 12px 0 0' }}>
+            <h2 className="h5 mb-0 d-flex align-items-center gap-2 fw-bold">
               <Users size={24} style={{ color: '#C8102E' }} />
               Список предметов
             </h2>
+            <p className="small text-muted mb-0 mt-2">
+              Всего предметов: <strong>{filteredSubjects.length}</strong>
+            </p>
           </div>
           
-          <div className="card-body p-4">
-            <div className="table-responsive">
-              <Table className="table-hover mb-0">
-                <thead className="bg-light">
+          <div className="card-body p-0">
+            <div style={{ maxHeight: '500px', overflowY: 'auto' }}>
+              <Table className="mb-0">
+                <thead style={{ position: 'sticky', top: 0, backgroundColor: '#f8f9fa', zIndex: 5, boxShadow: '0 2px 4px rgba(0,0,0,0.05)' }}>
                   <tr>
-                    <th style={{ width: '60%' }}>Предмет</th>
-                    <th className="text-end">Действия</th>
+                    <th className="px-4 py-3" style={{ fontWeight: '600', fontSize: '14px' }}>Предмет</th>
+                    <th className="text-end px-4 py-3" style={{ fontWeight: '600', fontSize: '14px', minWidth: '200px' }}>Действия</th>
                   </tr>
                 </thead>
                 
                 <tbody>
                   {filteredSubjects.length > 0 ? (
-                    filteredSubjects.map((subject) => (
-                      <tr key={subject}>
-                        <td>{subject}</td>
-                        <td className="text-end">
-                          <button
-                            onClick={() => 
-                              selectedSubject === subject && isGroupsOpen 
-                                ? closeGroups() 
-                                : fetchSubjectGroups(subject)
-                            }
-                            className="btn btn-blue btn-sm me-2"
-                          >
-                            <Eye size={16} className="me-1" />
-                            {selectedSubject === subject && isGroupsOpen ? 'Закрыть' : 'Группы'}
-                          </button>
-                          <button
-                            onClick={() => deleteSubject(subject)}
-                            className="btn btn-red btn-sm"
-                          >
-                            <Trash2 size={16} className="me-1" />
-                            Удалить
-                          </button>
+                    filteredSubjects.map((subject, index) => (
+                      <tr 
+                        key={subject}
+                        style={{ 
+                          backgroundColor: index % 2 === 0 ? '#ffffff' : '#f8f9fa',
+                          transition: 'background-color 0.2s'
+                        }}
+                        className="hover-row"
+                      >
+                        <td className="px-4 py-3" style={{ fontWeight: '500', fontSize: '14px' }}>
+                          {subject}
+                        </td>
+                        <td className="text-end px-4 py-3">
+                          <div className="d-flex justify-content-end gap-2">
+                            <button
+                              onClick={() => 
+                                selectedSubject === subject && isGroupsOpen 
+                                  ? closeGroups() 
+                                  : fetchSubjectGroups(subject)
+                              }
+                              className="btn btn-sm btn-primary d-flex align-items-center gap-1"
+                              style={{ borderRadius: '6px', fontSize: '13px', minWidth: '90px' }}
+                            >
+                              <Eye size={14} />
+                              {selectedSubject === subject && isGroupsOpen ? 'Закрыть' : 'Группы'}
+                            </button>
+                            <button
+                              onClick={() => deleteSubject(subject)}
+                              className="btn btn-sm btn-danger d-flex align-items-center gap-1"
+                              style={{ borderRadius: '6px', fontSize: '13px' }}
+                            >
+                              <Trash2 size={14} />
+                              Удалить
+                            </button>
+                          </div>
                         </td>
                       </tr>
                     ))
                   ) : (
                     <tr>
-                      <td colSpan="2" className="text-center py-4 text-muted">
-                        {searchQuery ? 'Ничего не найдено' : 'Нет доступных предметов'}
+                      <td colSpan="2" className="text-center py-5 text-muted">
+                        <div className="d-flex flex-column align-items-center gap-2">
+                          <BookOpen size={48} style={{ opacity: 0.3 }} />
+                          <p className="mb-0" style={{ fontSize: '16px' }}>
+                            {searchQuery ? 'Ничего не найдено' : 'Нет доступных предметов'}
+                          </p>
+                        </div>
                       </td>
                     </tr>
                   )}
@@ -886,6 +935,81 @@ const ManagePredSubjectList = () => {
           </div>
         </div>
       </div>
+
+      <style>{`
+        .hover-row:hover {
+          background-color: #e9ecef !important;
+          cursor: pointer;
+        }
+
+        .btn-red {
+          background-color: #C8102E;
+          border-color: #C8102E;
+          color: white;
+        }
+
+        .btn-red:hover:not(:disabled) {
+          background-color: #a00d25;
+          border-color: #a00d25;
+          color: white;
+        }
+
+        .btn-red:disabled {
+          opacity: 0.6;
+          cursor: not-allowed;
+        }
+
+        .btn-blue {
+          background-color: #0d6efd;
+          border-color: #0d6efd;
+          color: white;
+        }
+
+        .btn-blue:hover:not(:disabled) {
+          background-color: #0b5ed7;
+          border-color: #0b5ed7;
+          color: white;
+        }
+
+        .card {
+          transition: box-shadow 0.3s ease;
+        }
+
+        .card:hover {
+          box-shadow: 0 4px 12px rgba(0,0,0,0.1) !important;
+        }
+
+        .form-control:focus,
+        .form-select:focus {
+          border-color: #C8102E;
+          box-shadow: 0 0 0 0.2rem rgba(200, 16, 46, 0.15);
+        }
+
+        .disabled-page {
+          pointer-events: none;
+          opacity: 0.6;
+        }
+
+        /* Стиль для скроллбара */
+        *::-webkit-scrollbar {
+          width: 8px;
+          height: 8px;
+        }
+
+        *::-webkit-scrollbar-track {
+          background: #f1f1f1;
+          border-radius: 4px;
+        }
+
+        *::-webkit-scrollbar-thumb {
+          background: #c8c8c8;
+          border-radius: 4px;
+        }
+
+        *::-webkit-scrollbar-thumb:hover {
+          background: #a8a8a8;
+        }
+      `}</style>
     </div>
   );
 };
