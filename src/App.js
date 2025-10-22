@@ -57,11 +57,11 @@ const ExamScheduler = () => {
 
 // Функция, убирающая всё в круглых скобках и разбивающая по "+"
 const parseRoomString = (roomString) => {
-  if (!roomString) return [];
-  
-  let cleaned = roomString.replace(/\(.*?\)/g, '');
-  return cleaned.split('+').map(str => str.trim());
+  if (typeof roomString !== "string") return [];
+  const cleaned = roomString.replace(/\(.*?\)/g, "");
+  return cleaned.split("+").map(s => s.trim()).filter(Boolean);
 };
+
 
 // Функция для проверки, совпадает ли аудитория (обёрнута в useCallback)
 const matchesRoom = useCallback((roomString, filterValue) => {
@@ -137,15 +137,13 @@ const filterData = useCallback((data) => {
   const fetchScheduleData = useCallback(async () => {
     const schedulePromise = scheduleApi.getGeneralSchedule()
       .then(data => {
-        const sanitizedData = data.map(item => {
-          const newItem = { ...item };
-          Object.keys(newItem).forEach(key => {
-            if (typeof newItem[key] === 'number' && isNaN(newItem[key])) {
-              newItem[key] = null;
-            }
-          });
-          return newItem;
-        });
+        const sanitizedData = (data || []).map(item => ({
+      ...item,
+      Room: item.Room ? String(item.Room) : "",
+      Date: item.Date ? String(item.Date) : "",
+      Subject: item.Subject ? String(item.Subject) : "",
+      Teacher: item.Teacher ? String(item.Teacher) : "",
+    }));
   
         setScheduleData(sanitizedData);
         setFilteredData(sanitizedData);
