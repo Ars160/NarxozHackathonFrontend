@@ -89,7 +89,9 @@ const ManagePredSubjectList = () => {
                 has_exam: localChanges.has_exam ?? group.has_exam ?? true,
                 has_proctor: localChanges.has_proctor ?? group.has_proctor ?? true,
                 two_rooms_needed: localChanges.two_rooms_needed ?? group.two_rooms_needed ?? false,
-                bookedSlotId: group.bookedSlotId ?? null
+                bookedSlotId: group.bookedSlotId ?? null,
+                classroom_type: localChanges.classroom_type ?? group.classroom_type ?? 'regular',
+                duration: localChanges.duration ?? group.duration ?? 180
               };
             }));
           }
@@ -160,6 +162,44 @@ const ManagePredSubjectList = () => {
     }
   };
 
+  const handleClassroomTypeChange = (sectionId, newType) => {
+    setSubjectGroups(prev => {
+      const updated = { ...prev };
+      updated[selectedSubject] = updated[selectedSubject].map(g =>
+        g.Section === sectionId ? { ...g, classroom_type: newType } : g
+      );
+      return updated;
+    });
+
+    setPendingChanges(prev => ({
+      ...prev,
+      [sectionId]: {
+        ...(prev[sectionId] || {}),
+        classroom_type: newType
+      }
+    }));
+  };
+
+  const handleDurationChange = async (sectionId, newDuration) => {
+    setSubjectGroups(prev => {
+      const updated = { ...prev };
+      updated[selectedSubject] = updated[selectedSubject].map(g =>
+        g.Section === sectionId ? { ...g, duration: newDuration } : g
+      );
+      return updated;
+    });
+    setPendingChanges(prev => ({
+      ...prev,
+      [sectionId]: { ...(prev[sectionId] || {}), duration: newDuration }
+    }));
+    const res = await fetch('http://localhost:5000/api/update_exam_durations', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', ...authHeaders().headers },
+      body: JSON.stringify({ exams: [{ section_id: sectionId, duration: newDuration }] })
+    });
+    res.ok ? toast.success('Длительность обновлена') : toast.error('Ошибка обновления');
+  };
+
   const handleReady = async () => {
     if (!window.confirm('Подтвердить готовность и отправить все накопленные изменения?')) return;
 
@@ -176,7 +216,9 @@ const ManagePredSubjectList = () => {
       section_id: sectionId,
       has_exam: changes.has_exam,
       has_proctor: changes.has_proctor,
-      two_rooms_needed: changes.two_rooms_needed
+      two_rooms_needed: changes.two_rooms_needed,
+      classroom_type: changes.classroom_type,
+      duration: changes.duration
     }));
 
     const bookingsPayload = pendingBookings.map(b => ({
@@ -315,131 +357,95 @@ const ManagePredSubjectList = () => {
     }));
   };
 
-  const handleToggleAllExams = async (enable) => {
+  const handleToggleAllExams = (enable) => {
     if (!selectedSubject) return;
 
-    try {
-      const examUpdates = subjectGroups[selectedSubject].map(group => ({
-        section_id: group.Section,
-        has_exam: enable
-      }));
+    const updatedGroups = subjectGroups[selectedSubject].map(group => ({
+      ...group,
+      has_exam: enable,
+      has_proctor: enable, // Если включаем экзамен, включаем и проктора по умолчанию
+      two_rooms_needed: enable ? group.two_rooms_needed : false
+    }));
 
-      await scheduleApi.updateExamStatus({ exams: examUpdates });
+    setSubjectGroups(prev => ({
+      ...prev,
+      [selectedSubject]: updatedGroups
+    }));
 
-      if (!enable) {
-        const proctorAndRoomUpdates = subjectGroups[selectedSubject].map(group => ({
-          section_id: group.Section,
-          has_proctor: false,
-          two_rooms_needed: false
-        }));
-
-        await Promise.all([
-          scheduleApi.updateProctorStatus({ 
-            exams: proctorAndRoomUpdates.map(item => ({ 
-              section_id: item.section_id, 
-              has_proctor: item.has_proctor 
-            }))
-          }),
-          scheduleApi.updateRoomReqStatus({ 
-            exams: proctorAndRoomUpdates.map(item => ({ 
-              section_id: item.section_id, 
-              two_rooms_needed: item.two_rooms_needed
-            }))
-          })
-        ]);
-      } else {
-        const proctorUpdates = subjectGroups[selectedSubject].map(group => ({
-          section_id: group.Section,
-          has_proctor: true
-        }));
-
-        await scheduleApi.updateProctorStatus({ exams: proctorUpdates });
-      }
-
-      const updatedGroups = subjectGroups[selectedSubject].map(group => ({
-        ...group,
+    const newPendingChanges = { ...pendingChanges };
+    updatedGroups.forEach(group => {
+      newPendingChanges[group.Section] = {
+        ...(newPendingChanges[group.Section] || {}),
         has_exam: enable,
-        has_proctor: enable ? true : false,
+        has_proctor: enable,
         two_rooms_needed: enable ? group.two_rooms_needed : false
-      }));
+      };
+    });
+    setPendingChanges(newPendingChanges);
 
-      setSubjectGroups(prev => ({
-        ...prev,
-        [selectedSubject]: updatedGroups
-      }));
-
-      toast.success(`Все экзамены ${enable ? 'включены' : 'отключены'}`);
-    } catch (error) {
-      toast.error('Ошибка обновления статуса экзаменов');
-    }
+    toast.success(`Все экзамены локально ${enable ? 'включены' : 'отключены'}`);
   };
 
-  const handleToggleAllProctors = async (enable) => {
+  const handleToggleAllProctors = (enable) => {
     if (!selectedSubject) return;
 
-    try {
-      const groupsWithExam = subjectGroups[selectedSubject].filter(group => group.has_exam);
-      
-      if (groupsWithExam.length === 0) {
-        toast.warning('Нет групп с включенными экзаменами');
-        return;
-      }
+    const groupsWithExam = subjectGroups[selectedSubject].filter(group => group.has_exam);
+    if (groupsWithExam.length === 0) {
+      toast.warning('Нет групп с включенными экзаменами');
+      return;
+    }
 
-      const proctorUpdates = groupsWithExam.map(group => ({
-        section_id: group.Section,
+    const updatedGroups = subjectGroups[selectedSubject].map(group => ({
+      ...group,
+      has_proctor: group.has_exam ? enable : group.has_proctor
+    }));
+
+    setSubjectGroups(prev => ({
+      ...prev,
+      [selectedSubject]: updatedGroups
+    }));
+
+    const newPendingChanges = { ...pendingChanges };
+    groupsWithExam.forEach(group => {
+      newPendingChanges[group.Section] = {
+        ...(newPendingChanges[group.Section] || {}),
         has_proctor: enable
-      }));
+      };
+    });
+    setPendingChanges(newPendingChanges);
 
-      await scheduleApi.updateProctorStatus({ exams: proctorUpdates });
-
-      const updatedGroups = subjectGroups[selectedSubject].map(group => ({
-        ...group,
-        has_proctor: group.has_exam ? enable : false
-      }));
-
-      setSubjectGroups(prev => ({
-        ...prev,
-        [selectedSubject]: updatedGroups
-      }));
-
-      toast.success(`Все прокторы ${enable ? 'включены' : 'отключены'}`);
-    } catch (error) {
-      toast.error('Ошибка обновления статусов прокторов');
-    }
+    toast.success(`Все прокторы локально ${enable ? 'включены' : 'отключены'}`);
   };
 
-  const handleToggleAllRooms = async (enable) => {
+  const handleToggleAllRooms = (enable) => {
     if (!selectedSubject) return;
 
-    try {
-      const groupsWithExam = subjectGroups[selectedSubject].filter(group => group.has_exam);
-      
-      if (groupsWithExam.length === 0) {
-        toast.warning('Нет групп с включенными экзаменами');
-        return;
-      }
-
-      const roomUpdates = groupsWithExam.map(group => ({
-        section_id: group.Section,
-        two_rooms_needed: enable
-      }));
-
-      await scheduleApi.updateRoomReqStatus({ exams: roomUpdates });
-
-      const updatedGroups = subjectGroups[selectedSubject].map(group => ({
-        ...group,
-        two_rooms_needed: group.has_exam ? enable : false
-      }));
-
-      setSubjectGroups(prev => ({
-        ...prev,
-        [selectedSubject]: updatedGroups
-      }));
-
-      toast.success(`Все требования аудиторий ${enable ? 'включены' : 'отключены'}`);
-    } catch (error) {
-      toast.error('Ошибка обновления требований аудиторий');
+    const groupsWithExam = subjectGroups[selectedSubject].filter(group => group.has_exam);
+    if (groupsWithExam.length === 0) {
+      toast.warning('Нет групп с включенными экзаменами');
+      return;
     }
+
+    const updatedGroups = subjectGroups[selectedSubject].map(group => ({
+      ...group,
+      two_rooms_needed: group.has_exam ? enable : group.two_rooms_needed
+    }));
+
+    setSubjectGroups(prev => ({
+      ...prev,
+      [selectedSubject]: updatedGroups
+    }));
+
+    const newPendingChanges = { ...pendingChanges };
+    groupsWithExam.forEach(group => {
+      newPendingChanges[group.Section] = {
+        ...(newPendingChanges[group.Section] || {}),
+        two_rooms_needed: enable
+      };
+    });
+    setPendingChanges(newPendingChanges);
+
+    toast.success(`Все требования аудиторий локально ${enable ? 'включены' : 'отключены'}`);
   };
 
   const fetchFreeSlots = async () => {
@@ -449,7 +455,7 @@ const ManagePredSubjectList = () => {
     }
     setSlotsLoading(true);
     try {
-      const res = await fetch(`http://localhost:5000/api/classroom/${encodeURIComponent(classroomNumber)}/free-slots`, authHeaders());
+      const res = await fetch(`http://localhost:5000/api/classroom/free-slots?classroom_number=${encodeURIComponent(classroomNumber)}`, authHeaders());
       if (!res.ok) {
         toast.error('Не удалось загрузить слоты для аудитории');
         setFreeSlots([]);
@@ -744,6 +750,11 @@ const ManagePredSubjectList = () => {
                   <thead style={{ position: 'sticky', top: 0, backgroundColor: '#f8f9fa', zIndex: 10, boxShadow: '0 2px 4px rgba(0,0,0,0.05)' }}>
                     <tr>
                       <th className="text-end px-4 py-3" style={{ fontWeight: '600', fontSize: '14px', minWidth: '200px' }}>Действия</th>
+                      <th className="px-4 py-3 text-center" style={{ fontWeight: '600', fontSize: '14px' }}>
+  Тип аудитории
+</th>
+<th className="px-4 py-3 text-center" style={{ fontWeight: '600', fontSize: '14px' }}>Длительность</th>
+
                     </tr>
                   </thead>
                   <tbody>
@@ -787,6 +798,32 @@ const ManagePredSubjectList = () => {
                               style={{ display: 'inline-block' }}
                             />
                           </td>
+
+                          <td className="px-4 py-3 text-center">
+                            <select
+                              className="form-select form-select-sm"
+                              value={group.classroom_type || 'regular'}
+                              onChange={(e) => handleClassroomTypeChange(group.Section, e.target.value)}
+                              disabled={!group.has_exam}
+                              style={{ borderRadius: '6px', fontSize: '13px' }}
+                            >
+                              <option value="regular">Обычная</option>
+                              <option value="it_lab">IT Лаборатория</option>
+                            </select>
+                          </td>
+                          <td className="px-4 py-3 text-center">
+                            <select
+                              className="form-select form-select-sm"
+                              value={group.duration || 90}
+                              onChange={(e) => handleDurationChange(group.Section, Number(e.target.value))}
+                              disabled={!group.has_exam}
+                            >
+                              {[30, 60, 90, 120, 150, 180].map(min => (
+                                <option key={min} value={min}>{min} мин</option>
+                              ))}
+                            </select>
+                          </td>
+
 
                           <td className="px-4 py-3">
                             <div className="d-flex gap-2 align-items-center">

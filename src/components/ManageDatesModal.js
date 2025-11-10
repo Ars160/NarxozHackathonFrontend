@@ -33,6 +33,7 @@ const ManageDatesModal = ({ show, onClose, dates, onComplete }) => {
       const response = await scheduleApi.removeDate(dateToRemove); // Добавлен await
       // Убрана ручная проверка response.ok, так как ошибки перехватываются catch
       const data = response; // response уже является результатом await
+      console.log('Server response after removing date:', data);
       updateDatesWithSort(data.dates || []);
       toast.success(`Дата ${dateToRemove} успешно удалена`);
     } catch (error) {
