@@ -93,7 +93,15 @@ const filterData = useCallback((data) => {
     const matchesSection = exam.Section.toLowerCase().includes(filterCriteria.section.trim().toLowerCase());
 
     // Фильтр по дате (если указана)
-    const matchesDate = !filterCriteria.date || exam.Date.includes(filterCriteria.date);
+    const matchesDate = !filterCriteria.date || (() => {
+      try {
+        // Нормализуем дату из базы данных в формат YYYY-MM-DD
+        const examDate = new Date(exam.Date).toISOString().split('T')[0];
+        return examDate === filterCriteria.date;
+      } catch (e) {
+        return false;
+      }
+    })();
 
     return (
       matchesSubject &&
@@ -105,11 +113,7 @@ const filterData = useCallback((data) => {
       isRoomMatch
     );
   });
-}, [filterCriteria, matchesRoom]); // Добавили matchesRoom в зависимости
-
-
-  
-  
+}, [filterCriteria, matchesRoom]);
 
   const sortData = useCallback((data, key) => {
     const direction = sortConfig.key === key && sortConfig.direction === 'ascending' ? 'descending' : 'ascending';

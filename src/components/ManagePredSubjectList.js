@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'react-toastify';
-import { Search, Trash2, Eye, BookOpen, Users, X, Calendar } from 'lucide-react';
-import { Form, Table } from 'react-bootstrap';
+import { Search, Trash2, BookOpen, Users, Calendar, CheckCircle, ArrowUpDown, ChevronDown, ChevronRight } from 'lucide-react';
+import { Form, Table, Badge } from 'react-bootstrap';
 import 'bootstrap/dist/css/bootstrap.min.css';
 import '../styles/style.css';
 import Navbar from './NavBar';
@@ -15,10 +15,11 @@ const ManagePredSubjectList = () => {
   const [selectedSubject, setSelectedSubject] = useState(null);
   const [subjectGroups, setSubjectGroups] = useState({});
   const [searchQuery, setSearchQuery] = useState('');
-  const [isGroupsOpen, setIsGroupsOpen] = useState(false);
+  const [sortBy, setSortBy] = useState('section');
   const [groupsLoading, setGroupsLoading] = useState(false);
   const [readyLoading, setReadyLoading] = useState(false);
   const [pendingChanges, setPendingChanges] = useState({});
+  const [viewedSubjects, setViewedSubjects] = useState(new Set());
 
   const [classroomNumber, setClassroomNumber] = useState('107');
   const [freeSlots, setFreeSlots] = useState([]);
@@ -31,7 +32,15 @@ const ManagePredSubjectList = () => {
 
   useEffect(() => {
     fetchSubjects();
+    const viewed = localStorage.getItem('viewedSubjects');
+    if (viewed) {
+      setViewedSubjects(new Set(JSON.parse(viewed)));
+    }
   }, []);
+
+  useEffect(() => {
+    localStorage.setItem('viewedSubjects', JSON.stringify([...viewedSubjects]));
+  }, [viewedSubjects]);
 
   const fetchSubjects = async () => {
     try {
@@ -64,12 +73,20 @@ const ManagePredSubjectList = () => {
   };
 
   const fetchSubjectGroups = async (subject) => {
+    // Если уже открыт этот предмет, закрываем его
+    if (selectedSubject === subject) {
+      setSelectedSubject(null);
+      return;
+    }
+
     setGroupsLoading(true);
+    setViewedSubjects(prev => new Set([...prev, subject]));
+    
     try {
       const response = await fetch(`http://localhost:5000/subjects/${encodeURIComponent(subject)}/groups`, authHeaders());
       
       if (!response.ok) {
-        closeGroups();
+        setSelectedSubject(null);
         toast.info(`Группы для предмета "${subject}" не найдены`);
         return;
       }
@@ -100,20 +117,12 @@ const ManagePredSubjectList = () => {
 
       setSubjectGroups(prev => ({ ...prev, [subject]: groupsArray }));
       setSelectedSubject(subject);
-      setIsGroupsOpen(true);
 
     } catch (error) {
       toast.error(`Ошибка при загрузке групп для предмета "${subject}"`);
     } finally {
       setGroupsLoading(false);
     }
-  };
-
-  const closeGroups = () => {
-    setSelectedSubject(null);
-    setIsGroupsOpen(false);
-    setFreeSlots([]);
-    setSelectedSlotForSection({});
   };
 
   const deleteSubject = async (subject) => {
@@ -130,7 +139,6 @@ const ManagePredSubjectList = () => {
         
         if (selectedSubject === subject) {
           setSelectedSubject(null);
-          setIsGroupsOpen(false);
         }
         
         toast.success(`Предмет "${subject}" удален`);
@@ -363,7 +371,7 @@ const ManagePredSubjectList = () => {
     const updatedGroups = subjectGroups[selectedSubject].map(group => ({
       ...group,
       has_exam: enable,
-      has_proctor: enable, // Если включаем экзамен, включаем и проктора по умолчанию
+      has_proctor: enable,
       two_rooms_needed: enable ? group.two_rooms_needed : false
     }));
 
@@ -383,7 +391,7 @@ const ManagePredSubjectList = () => {
     });
     setPendingChanges(newPendingChanges);
 
-    toast.success(`Все экзамены локально ${enable ? 'включены' : 'отключены'}`);
+    toast.success(`Все экзамены ${enable ? 'включены' : 'отключены'}`);
   };
 
   const handleToggleAllProctors = (enable) => {
@@ -414,7 +422,7 @@ const ManagePredSubjectList = () => {
     });
     setPendingChanges(newPendingChanges);
 
-    toast.success(`Все прокторы локально ${enable ? 'включены' : 'отключены'}`);
+    toast.success(`Все прокторы ${enable ? 'включены' : 'отключены'}`);
   };
 
   const handleToggleAllRooms = (enable) => {
@@ -445,7 +453,7 @@ const ManagePredSubjectList = () => {
     });
     setPendingChanges(newPendingChanges);
 
-    toast.success(`Все требования аудиторий локально ${enable ? 'включены' : 'отключены'}`);
+    toast.success(`Все требования аудиторий ${enable ? 'включены' : 'отключены'}`);
   };
 
   const fetchFreeSlots = async () => {
@@ -597,429 +605,455 @@ const ManagePredSubjectList = () => {
     subject.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
+  const getSortedGroups = () => {
+    if (!selectedSubject || !subjectGroups[selectedSubject]) return [];
+    
+    const groups = [...subjectGroups[selectedSubject]];
+    
+    switch(sortBy) {
+      case 'section':
+        return groups.sort((a, b) => a.Section.localeCompare(b.Section));
+      case 'instructor':
+        return groups.sort((a, b) => (a.Instructor || '').localeCompare(b.Instructor || ''));
+      case 'program':
+        return groups.sort((a, b) => (a.EduProgram || '').localeCompare(b.EduProgram || ''));
+      default:
+        return groups;
+    }
+  };
+
+  const sortedGroups = getSortedGroups();
+
   return (
     <div className={`min-vh-100 ${readyLoading ? 'disabled-page' : ''}`} style={{ backgroundColor: '#f8f9fa' }}>
       <Navbar showFilterButton={false} />
       
-      <div className="container-fluid px-4 py-4">
+      <div className="container-fluid px-3 py-3">
         {readyLoading && <GlobalLoader />}
         
-        {/* Верхняя панель */}
-        <div className="d-flex flex-column flex-lg-row justify-content-between align-items-start align-items-lg-center gap-3 mb-4">
-          <button
-            onClick={handleReady}
-            className="btn btn-red d-flex align-items-center gap-2 px-4 py-2 shadow-sm"
-            disabled={readyLoading}
-            style={{ minWidth: '160px', fontWeight: '500' }}
-          >
-            {readyLoading ? (
-              <>
-                <span className="spinner-border spinner-border-sm" role="status" />
-                Отправка...
-              </>
-            ) : (
-              <>
-                <Calendar size={18} />
-                Готово
-              </>
-            )}
-          </button>
-          
-          <div className="position-relative" style={{ minWidth: '300px' }}>
-            <Search size={20} className="position-absolute top-50 translate-middle-y ms-3 text-muted" />
-            <input
-              type="text"
-              placeholder="Поиск предметов..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="form-control ps-5 py-2 shadow-sm"
-              style={{ 
-                borderColor: '#dee2e6',
-                borderRadius: '8px'
-              }}
-            />
+        {/* Компактная верхняя панель */}
+        <div className="card shadow-sm mb-3 border-0" style={{ borderRadius: '10px' }}>
+          <div className="card-body p-3">
+            <div className="d-flex flex-column flex-lg-row justify-content-between align-items-center gap-2">
+              <div className="d-flex align-items-center gap-2">
+                <button
+                  onClick={handleReady}
+                  className="btn btn-red d-flex align-items-center gap-2 px-3 py-2"
+                  disabled={readyLoading}
+                  style={{ fontSize: '14px', borderRadius: '6px' }}
+                >
+                  {readyLoading ? (
+                    <>
+                      <span className="spinner-border spinner-border-sm" />
+                      Отправка...
+                    </>
+                  ) : (
+                    <>
+                      <Calendar size={16} />
+                      Готово
+                    </>
+                  )}
+                </button>
+                
+                {Object.keys(pendingChanges).length > 0 && (
+                  <Badge bg="warning" text="dark" className="py-1 px-2" style={{ fontSize: '12px' }}>
+                    Изменений: {Object.keys(pendingChanges).length}
+                  </Badge>
+                )}
+              </div>
+              
+              <div className="position-relative" style={{ width: '280px' }}>
+                <input
+                  type="text"
+                  placeholder="Поиск предметов..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="form-control form-control-sm ps-4"
+                  style={{ borderRadius: '6px', fontSize: '13px' }}
+                />
+              </div>
+            </div>
           </div>
         </div>
 
         {groupsLoading && <LocalLoader />}
 
-        {/* Панель групп предмета */}
-        {isGroupsOpen && selectedSubject && (
-          <div className="card shadow-sm mb-4" style={{ borderRadius: '12px', border: 'none' }}>
-            <div className="card-header bg-white p-4" style={{ borderBottom: '2px solid #e9ecef', borderRadius: '12px 12px 0 0' }}>
-              <div className="d-flex flex-column gap-3">
-                <div className="d-flex align-items-center justify-content-between">
-                  <h2 className="h5 mb-0 d-flex align-items-center gap-2 fw-bold">
-                    <BookOpen size={24} style={{ color: '#C8102E' }} />
-                    Группы предмета: <span style={{ color: '#C8102E' }}>"{selectedSubject}"</span>
-                  </h2>
-                  <button
-                    onClick={closeGroups}
-                    className="btn btn-outline-secondary d-flex align-items-center gap-2"
-                    style={{ borderRadius: '8px' }}
-                  >
-                    <X size={18} />
-                    Закрыть
-                  </button>
-                </div>
-
-                {/* Панель управления слотами */}
-                <div className="d-flex flex-wrap gap-2 align-items-center p-3 bg-light rounded">
-                  <div className="input-group" style={{ maxWidth: '320px' }}>
-                    <input
-                      type="text"
-                      className="form-control"
-                      value={classroomNumber}
-                      onChange={(e) => setClassroomNumber(e.target.value)}
-                      placeholder="Номер аудитории"
-                      style={{ borderRadius: '8px 0 0 8px' }}
-                    />
-                    <button 
-                      className="btn btn-outline-primary" 
-                      onClick={fetchFreeSlots} 
-                      disabled={slotsLoading}
-                      style={{ borderRadius: '0 8px 8px 0' }}
-                    >
-                      {slotsLoading ? 'Загрузка...' : 'Загрузить слоты'}
-                    </button>
-                  </div>
-
-                  <button
-                    onClick={handleCommitBookings}
-                    className="btn btn-success d-flex align-items-center gap-2 shadow-sm"
-                    disabled={pendingBookings.length === 0 || commitLoading}
-                    style={{ borderRadius: '8px', fontWeight: '500' }}
-                  >
-                    {commitLoading ? (
-                      <>
-                        <span className="spinner-border spinner-border-sm" />
-                        Отправка...
-                      </>
-                    ) : (
-                      <>
-                        <Calendar size={18} />
-                        Закрепить выбранные ({pendingBookings.length})
-                      </>
-                    )}
-                  </button>
-
-                  <div className="ms-auto d-flex gap-2 flex-wrap">
-                    <button
-                      onClick={() => handleToggleAllExams(!subjectGroups[selectedSubject].every(g => g.has_exam))}
-                      className="btn btn-sm btn-outline-primary"
-                      style={{ borderRadius: '8px' }}
-                    >
-                      {subjectGroups[selectedSubject].every(g => g.has_exam) ? 'Выкл все экзамены' : 'Вкл все экзамены'}
-                    </button>
-                    <button
-                      onClick={() => handleToggleAllProctors(!subjectGroups[selectedSubject].every(g => g.has_exam && g.has_proctor))}
-                      className="btn btn-sm btn-outline-primary"
-                      disabled={!subjectGroups[selectedSubject].some(g => g.has_exam)}
-                      style={{ borderRadius: '8px' }}
-                    >
-                      {subjectGroups[selectedSubject].filter(g => g.has_exam).every(g => g.has_proctor) ? 'Выкл всех прокторов' : 'Вкл всех прокторов'}
-                    </button>
-                    <button
-                      onClick={() => handleToggleAllRooms(!subjectGroups[selectedSubject].every(g => g.has_exam && g.two_rooms_needed))}
-                      className="btn btn-sm btn-outline-primary"
-                      disabled={!subjectGroups[selectedSubject].some(g => g.has_exam)}
-                      style={{ borderRadius: '8px' }}
-                    >
-                      {subjectGroups[selectedSubject].filter(g => g.has_exam).every(g => g.two_rooms_needed) ? 'Выкл все аудитории' : 'Вкл все аудитории'}
-                    </button>
-                  </div>
-                </div>
-
-                <div className="small text-muted">
-                  {freeSlots.length > 0 ? (
-                    <>✓ Загружено {freeSlots.length} слотов для аудитории {classroomNumber}</>
-                  ) : (
-                    'Слоты не загружены'
+        {/* Accordion список предметов */}
+        <div className="card shadow-sm border-0" style={{ borderRadius: '10px' }}>
+          <div className="card-header bg-white p-3" style={{ borderBottom: '1px solid #e9ecef', borderRadius: '10px 10px 0 0' }}>
+            <div className="d-flex justify-content-between align-items-center">
+              <div>
+                <h6 className="mb-0 d-flex align-items-center gap-2">
+                  <Users size={18} style={{ color: '#0d6efd' }} />
+                  Список предметов
+                </h6>
+                <p className="small text-muted mb-0 mt-1" style={{ fontSize: '12px' }}>
+                  Всего: <strong>{filteredSubjects.length}</strong>
+                  {viewedSubjects.size > 0 && (
+                    <span className="ms-2">• Просмотрено: <strong>{viewedSubjects.size}</strong></span>
                   )}
-                  {pendingBookings.length > 0 && (
-                    <span className="ms-3 badge bg-success">Локально выбрано: {pendingBookings.length}</span>
-                  )}
-                </div>
+                </p>
               </div>
             </div>
-            
-            {/* Таблица групп с горизонтальным скроллингом */}
-            <div className="card-body p-0">
-              <div style={{ maxHeight: '600px', overflowY: 'auto', overflowX: 'auto' }}>
-                <Table className="mb-0" style={{ minWidth: '1200px' }}>
-                  <thead style={{ position: 'sticky', top: 0, backgroundColor: '#f8f9fa', zIndex: 10, boxShadow: '0 2px 4px rgba(0,0,0,0.05)' }}>
-                    <tr>
-                      <th className="text-end px-4 py-3" style={{ fontWeight: '600', fontSize: '14px', minWidth: '200px' }}>Действия</th>
-                      <th className="px-4 py-3 text-center" style={{ fontWeight: '600', fontSize: '14px' }}>
-  Тип аудитории
-</th>
-<th className="px-4 py-3 text-center" style={{ fontWeight: '600', fontSize: '14px' }}>Длительность</th>
-
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {(subjectGroups[selectedSubject] || []).map((group, index) => {
-                      const isPendingLocal = pendingBookings.some(b => b.sectionId === group.Section);
-                      return (
-                        <tr 
-                          key={group.Section} 
-                          style={{ 
-                            backgroundColor: isPendingLocal ? '#d4edda' : index % 2 === 0 ? '#ffffff' : '#f8f9fa',
-                            transition: 'background-color 0.2s'
-                          }}
-                          className="hover-row"
-                        >
-                          <td className="px-4 py-3" style={{ fontWeight: '500' }}>{group.Section}</td>
-                          <td className="px-4 py-3">{group.EduProgram}</td>
-                          <td className="px-4 py-3">{group.Instructor}</td>
-                          <td className="text-center px-3 py-3">
-                            <Form.Check 
-                              type="switch"
-                              checked={group.has_exam}
-                              onChange={(e) => handleExamToggle(group.Section, e.target.checked)}
-                              style={{ display: 'inline-block' }}
-                            />
-                          </td>
-                          <td className="text-center px-3 py-3">
-                            <Form.Check 
-                              type="switch"
-                              checked={group.has_proctor}
-                              onChange={(e) => handleProctorToggle(group.Section, e.target.checked)}
-                              disabled={!group.has_exam}
-                              style={{ display: 'inline-block' }}
-                            />
-                          </td>
-                          <td className="text-center px-3 py-3">
-                            <Form.Check 
-                              type="switch"
-                              checked={group.two_rooms_needed}
-                              onChange={(e) => handleRoomReqToggle(group.Section, e.target.checked)}
-                              disabled={!group.has_exam}
-                              style={{ display: 'inline-block' }}
-                            />
-                          </td>
-
-                          <td className="px-4 py-3 text-center">
-                            <select
-                              className="form-select form-select-sm"
-                              value={group.classroom_type || 'regular'}
-                              onChange={(e) => handleClassroomTypeChange(group.Section, e.target.value)}
-                              disabled={!group.has_exam}
-                              style={{ borderRadius: '6px', fontSize: '13px' }}
-                            >
-                              <option value="regular">Обычная</option>
-                              <option value="it_lab">IT Лаборатория</option>
-                            </select>
-                          </td>
-                          <td className="px-4 py-3 text-center">
-                            <select
-                              className="form-select form-select-sm"
-                              value={group.duration || 90}
-                              onChange={(e) => handleDurationChange(group.Section, Number(e.target.value))}
-                              disabled={!group.has_exam}
-                            >
-                              {[30, 60, 90, 120, 150, 180].map(min => (
-                                <option key={min} value={min}>{min} мин</option>
-                              ))}
-                            </select>
-                          </td>
-
-
-                          <td className="px-4 py-3">
-                            <div className="d-flex gap-2 align-items-center">
-                              <select
-                                className="form-select form-select-sm"
-                                value={selectedSlotForSection[group.Section] ?? (group.bookedSlotId ?? '')}
-                                onChange={(e) => handleSelectSlotForSection(group.Section, e.target.value)}
-                                style={{ borderRadius: '6px', fontSize: '13px' }}
-                              >
-                                <option value="">— выбрать слот —</option>
-                                {freeSlots && freeSlots.length > 0 ? freeSlots.map(slot => (
-                                  <option key={slot.id} value={slot.id} disabled={slot.is_booked && !isPendingLocal}>
-                                    {new Date(slot.start_time).toLocaleString()} — {new Date(slot.end_time).toLocaleTimeString()} {slot.is_booked && !isPendingLocal ? '(занят)' : ''}
-                                  </option>
-                                )) : (
-                                  <option value="">Нет слотов</option>
-                                )}
-                              </select>
-                              {isPendingLocal && (
-                                <span className="badge bg-success" style={{ fontSize: '11px' }}>
-                                  Локально
-                                </span>
-                              )}
-                            </div>
-                          </td>
-
-                          <td className="text-end px-4 py-3">
-                            <div className="d-flex justify-content-end gap-2">
-                              {!isPendingLocal ? (
-                                <button
-                                  onClick={() => handleBookSlotLocal(group.Section)}
-                                  className="btn btn-sm btn-primary"
-                                  disabled={!selectedSlotForSection[group.Section]}
-                                  style={{ borderRadius: '6px', fontSize: '13px', minWidth: '80px' }}
-                                >
-                                  Закрепить
-                                </button>
-                              ) : (
-                                <button
-                                  onClick={() => cancelLocalBooking(group.Section)}
-                                  className="btn btn-sm btn-outline-secondary"
-                                  style={{ borderRadius: '6px', fontSize: '13px', minWidth: '80px' }}
-                                >
-                                  Отменить
-                                </button>
-                              )}
-
-                              <button
-                                onClick={() => deleteSection(group.Section)}
-                                className="btn btn-sm btn-danger d-flex align-items-center gap-1"
-                                disabled={isPendingLocal}
-                                style={{ borderRadius: '6px', fontSize: '13px' }}
-                              >
-                                <Trash2 size={14} />
-                                Удалить
-                              </button>
-                            </div>
-                          </td>
-                        </tr>
-                      );
-                    })}
-                  </tbody>
-                </Table>
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* Таблица предметов */}
-        <div className="card shadow-sm" style={{ borderRadius: '12px', border: 'none' }}>
-          <div className="card-header bg-white p-4" style={{ borderBottom: '2px solid #e9ecef', borderRadius: '12px 12px 0 0' }}>
-            <h2 className="h5 mb-0 d-flex align-items-center gap-2 fw-bold">
-              <Users size={24} style={{ color: '#C8102E' }} />
-              Список предметов
-            </h2>
-            <p className="small text-muted mb-0 mt-2">
-              Всего предметов: <strong>{filteredSubjects.length}</strong>
-            </p>
           </div>
           
-          <div className="card-body p-0">
-            <div style={{ maxHeight: '500px', overflowY: 'auto' }}>
-              <Table className="mb-0">
-                <thead style={{ position: 'sticky', top: 0, backgroundColor: '#f8f9fa', zIndex: 5, boxShadow: '0 2px 4px rgba(0,0,0,0.05)' }}>
-                  <tr>
-                    <th className="px-4 py-3" style={{ fontWeight: '600', fontSize: '14px' }}>Предмет</th>
-                    <th className="text-end px-4 py-3" style={{ fontWeight: '600', fontSize: '14px', minWidth: '200px' }}>Действия</th>
-                  </tr>
-                </thead>
-                
-                <tbody>
-                  {filteredSubjects.length > 0 ? (
-                    filteredSubjects.map((subject, index) => (
-                      <tr 
-                        key={subject}
-                        style={{ 
-                          backgroundColor: index % 2 === 0 ? '#ffffff' : '#f8f9fa',
-                          transition: 'background-color 0.2s'
+          <div className="card-body p-2">
+            <div style={{ maxHeight: '700px', overflowY: 'auto' }}>
+              {filteredSubjects.length > 0 ? (
+                filteredSubjects.map((subject) => {
+                  const isViewed = viewedSubjects.has(subject);
+                  const isExpanded = selectedSubject === subject;
+                  
+                  return (
+                    <div 
+                      key={subject}
+                      className="mb-2"
+                      style={{
+                        border: '1px solid #dee2e6',
+                        borderRadius: '8px',
+                        backgroundColor: 'white',
+                        overflow: 'hidden'
+                      }}
+                    >
+                      {/* Заголовок предмета */}
+                      <div
+                        className="d-flex align-items-center justify-content-between p-3"
+                        style={{
+                          cursor: 'pointer',
+                          borderBottom: isExpanded ? '1px solid #dee2e6' : 'none',
+                          backgroundColor: isExpanded ? '#e7f3ff' : 'white',
+                          transition: 'all 0.2s'
                         }}
-                        className="hover-row"
+                        onClick={() => fetchSubjectGroups(subject)}
                       >
-                        <td className="px-4 py-3" style={{ fontWeight: '500', fontSize: '14px' }}>
-                          {subject}
-                        </td>
-                        <td className="text-end px-4 py-3">
-                          <div className="d-flex justify-content-end gap-2">
-                            <button
-                              onClick={() => 
-                                selectedSubject === subject && isGroupsOpen 
-                                  ? closeGroups() 
-                                  : fetchSubjectGroups(subject)
-                              }
-                              className="btn btn-sm btn-primary d-flex align-items-center gap-1"
-                              style={{ borderRadius: '6px', fontSize: '13px', minWidth: '90px' }}
-                            >
-                              <Eye size={14} />
-                              {selectedSubject === subject && isGroupsOpen ? 'Закрыть' : 'Группы'}
-                            </button>
-                            <button
-                              onClick={() => deleteSubject(subject)}
-                              className="btn btn-sm btn-danger d-flex align-items-center gap-1"
-                              style={{ borderRadius: '6px', fontSize: '13px' }}
-                            >
-                              <Trash2 size={14} />
-                              Удалить
-                            </button>
-                          </div>
-                        </td>
-                      </tr>
-                    ))
-                  ) : (
-                    <tr>
-                      <td colSpan="2" className="text-center py-5 text-muted">
-                        <div className="d-flex flex-column align-items-center gap-2">
-                          <BookOpen size={48} style={{ opacity: 0.3 }} />
-                          <p className="mb-0" style={{ fontSize: '16px' }}>
-                            {searchQuery ? 'Ничего не найдено' : 'Нет доступных предметов'}
-                          </p>
+                        <div className="d-flex align-items-center gap-2">
+                          {isExpanded ? <ChevronDown size={18} /> : <ChevronRight size={18} />}
+                          {isViewed ? (
+                            <CheckCircle size={16} style={{ color: '#28a745' }} />
+                          ) : (
+                            <div style={{ 
+                              width: '16px', 
+                              height: '16px', 
+                              borderRadius: '50%', 
+                              border: '2px solid #dee2e6'
+                            }} />
+                          )}
+                          <strong style={{ fontSize: '14px' }}>{subject}</strong>
+                          {isExpanded && subjectGroups[subject] && (
+                            <Badge bg="secondary" style={{ fontSize: '11px' }}>
+                              {subjectGroups[subject].length} групп
+                            </Badge>
+                          )}
                         </div>
-                      </td>
-                    </tr>
-                  )}
-                </tbody>
-              </Table>
+                        
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            deleteSubject(subject);
+                          }}
+                          className="btn btn-sm btn-danger d-flex align-items-center gap-1"
+                          style={{ fontSize: '11px', padding: '4px 10px', borderRadius: '4px' }}
+                        >
+                          <Trash2 size={12} />
+                          Удалить
+                        </button>
+                      </div>
+
+                      {/* Развернутое содержимое - таблица групп */}
+                      {isExpanded && (
+                        <div className="p-3" style={{ backgroundColor: '#f8f9fa' }}>
+                          {/* Панель управления */}
+                          <div className="card mb-3 border-0 shadow-sm">
+                            <div className="card-body p-2">
+                              <div className="d-flex flex-wrap gap-2 align-items-center" style={{ fontSize: '12px' }}>
+                                {/* Сортировка */}
+                                <div className="d-flex align-items-center gap-1">
+                                  <ArrowUpDown size={14} />
+                                  <select
+                                    className="form-select form-select-sm"
+                                    value={sortBy}
+                                    onChange={(e) => setSortBy(e.target.value)}
+                                    style={{ width: 'auto', fontSize: '12px', borderRadius: '6px' }}
+                                  >
+                                    <option value="section">По секции</option>
+                                    <option value="instructor">По преподавателю</option>
+                                    <option value="program">По программе</option>
+                                  </select>
+                                </div>
+
+                                {/* Слоты */}
+                                <div className="input-group input-group-sm" style={{ maxWidth: '280px' }}>
+                                  <input
+                                    type="text"
+                                    className="form-control"
+                                    value={classroomNumber}
+                                    onChange={(e) => setClassroomNumber(e.target.value)}
+                                    placeholder="№ аудитории"
+                                    style={{ borderRadius: '6px 0 0 6px', fontSize: '12px' }}
+                                  />
+                                  <button 
+                                    className="btn btn-outline-primary btn-sm" 
+                                    onClick={fetchFreeSlots} 
+                                    disabled={slotsLoading}
+                                    style={{ borderRadius: '0 6px 6px 0', fontSize: '12px' }}
+                                  >
+                                    {slotsLoading ? 'Загр...' : 'Слоты'}
+                                  </button>
+                                </div>
+
+                                {/* Закрепить */}
+                                <button
+                                  onClick={handleCommitBookings}
+                                  className="btn btn-success btn-sm d-flex align-items-center gap-1"
+                                  disabled={pendingBookings.length === 0 || commitLoading}
+                                  style={{ borderRadius: '6px', fontSize: '12px' }}
+                                >
+                                  {commitLoading ? (
+                                    <>
+                                      <span className="spinner-border spinner-border-sm" style={{ width: '12px', height: '12px' }} />
+                                      Отправка
+                                    </>
+                                  ) : (
+                                    <>
+                                      Закрепить ({pendingBookings.length})
+                                    </>
+                                  )}
+                                </button>
+
+                                {/* Массовые действия */}
+                                <div className="ms-auto d-flex gap-1 flex-wrap">
+                                  <button
+                                    onClick={() => handleToggleAllExams(!subjectGroups[selectedSubject].every(g => g.has_exam))}
+                                    className="btn btn-sm btn-outline-secondary"
+                                    style={{ borderRadius: '6px', fontSize: '11px', padding: '4px 8px' }}
+                                  >
+                                    {subjectGroups[selectedSubject].every(g => g.has_exam) ? '✕ Экз' : '✓ Экз'}
+                                  </button>
+                                  <button
+                                    onClick={() => handleToggleAllProctors(!subjectGroups[selectedSubject].every(g => g.has_exam && g.has_proctor))}
+                                    className="btn btn-sm btn-outline-secondary"
+                                    disabled={!subjectGroups[selectedSubject].some(g => g.has_exam)}
+                                    style={{ borderRadius: '6px', fontSize: '11px', padding: '4px 8px' }}
+                                  >
+                                    {subjectGroups[selectedSubject].filter(g => g.has_exam).every(g => g.has_proctor) ? '✕ Прокт' : '✓ Прокт'}
+                                  </button>
+                                  <button
+                                    onClick={() => handleToggleAllRooms(!subjectGroups[selectedSubject].every(g => g.has_exam && g.two_rooms_needed))}
+                                    className="btn btn-sm btn-outline-secondary"
+                                    disabled={!subjectGroups[selectedSubject].some(g => g.has_exam)}
+                                    style={{ borderRadius: '6px', fontSize: '11px', padding: '4px 8px' }}
+                                  >
+                                    {subjectGroups[selectedSubject].filter(g => g.has_exam).every(g => g.two_rooms_needed) ? '✕ Ауд' : '✓ Ауд'}
+                                  </button>
+                                </div>
+                              </div>
+
+                              <div className="small text-muted mt-2" style={{ fontSize: '11px' }}>
+                                {freeSlots.length > 0 ? (
+                                  <>✓ Слотов: {freeSlots.length} (ауд. {classroomNumber})</>
+                                ) : (
+                                  'Слоты не загружены'
+                                )}
+                                {pendingBookings.length > 0 && (
+                                  <Badge bg="success" className="ms-2" style={{ fontSize: '10px' }}>Выбрано: {pendingBookings.length}</Badge>
+                                )}
+                              </div>
+                            </div>
+                          </div>
+
+                          {/* Таблица групп */}
+                          <div style={{ maxHeight: '500px', overflowY: 'auto', overflowX: 'auto' }}>
+                            <Table className="mb-0 table-sm" hover style={{ minWidth: '1200px', fontSize: '13px' }}>
+                              <thead style={{ 
+                                position: 'sticky', 
+                                top: 0, 
+                                backgroundColor: '#f1f3f5', 
+                                zIndex: 10
+                              }}>
+                                <tr>
+                                  <th className="px-3 py-2" style={{ fontWeight: '600', minWidth: '150px' }}>Секция</th>
+                                  <th className="px-3 py-2" style={{ fontWeight: '600', minWidth: '140px' }}>Программа</th>
+                                  <th className="px-3 py-2" style={{ fontWeight: '600', minWidth: '140px' }}>Преподаватель</th>
+                                  <th className="px-2 py-2 text-center" style={{ fontWeight: '600', width: '60px' }}>Экз</th>
+                                  <th className="px-2 py-2 text-center" style={{ fontWeight: '600', width: '60px' }}>Прокт</th>
+                                  <th className="px-2 py-2 text-center" style={{ fontWeight: '600', width: '60px' }}>2 Ауд</th>
+                                  <th className="px-2 py-2 text-center" style={{ fontWeight: '600', width: '110px' }}>Тип</th>
+                                  <th className="px-2 py-2 text-center" style={{ fontWeight: '600', width: '90px' }}>Мин</th>
+                                  <th className="px-3 py-2" style={{ fontWeight: '600', minWidth: '200px' }}>Слот</th>
+                                  <th className="text-end px-3 py-2" style={{ fontWeight: '600', minWidth: '160px' }}>Действия</th>
+                                </tr>
+                              </thead>
+                              <tbody>
+                                {sortedGroups.length > 0 ? (
+                                  sortedGroups.map((group) => {
+                                    const isPendingLocal = pendingBookings.some(b => b.sectionId === group.Section);
+                                    return (
+                                      <tr 
+                                        key={group.Section} 
+                                        style={{ 
+                                          backgroundColor: isPendingLocal ? '#d4edda' : 'inherit'
+                                        }}
+                                      >
+                                        <td className="px-3 py-2" style={{ fontWeight: '500' }}>{group.Section}</td>
+                                        <td className="px-3 py-2">{group.EduProgram}</td>
+                                        <td className="px-3 py-2">{group.Instructor}</td>
+                                        <td className="text-center px-2 py-2">
+                                          <Form.Check 
+                                            type="switch"
+                                            checked={group.has_exam}
+                                            onChange={(e) => handleExamToggle(group.Section, e.target.checked)}
+                                            style={{ display: 'inline-block', transform: 'scale(0.9)' }}
+                                          />
+                                        </td>
+                                        <td className="text-center px-2 py-2">
+                                          <Form.Check 
+                                            type="switch"
+                                            checked={group.has_proctor}
+                                            onChange={(e) => handleProctorToggle(group.Section, e.target.checked)}
+                                            disabled={!group.has_exam}
+                                            style={{ display: 'inline-block', transform: 'scale(0.9)' }}
+                                          />
+                                        </td>
+                                        <td className="text-center px-2 py-2">
+                                          <Form.Check 
+                                            type="switch"
+                                            checked={group.two_rooms_needed}
+                                            onChange={(e) => handleRoomReqToggle(group.Section, e.target.checked)}
+                                            disabled={!group.has_exam}
+                                            style={{ display: 'inline-block', transform: 'scale(0.9)' }}
+                                          />
+                                        </td>
+                                        <td className="px-2 py-2 text-center">
+                                          <select
+                                            className="form-select form-select-sm"
+                                            value={group.classroom_type || 'regular'}
+                                            onChange={(e) => handleClassroomTypeChange(group.Section, e.target.value)}
+                                            disabled={!group.has_exam}
+                                            style={{ borderRadius: '4px', fontSize: '12px' }}
+                                          >
+                                            <option value="regular">Обычная</option>
+                                            <option value="it_lab">IT Лаб</option>
+                                          </select>
+                                        </td>
+                                        <td className="px-2 py-2 text-center">
+                                          <select
+                                            className="form-select form-select-sm"
+                                            value={group.duration || 90}
+                                            onChange={(e) => handleDurationChange(group.Section, Number(e.target.value))}
+                                            disabled={!group.has_exam}
+                                            style={{ borderRadius: '4px', fontSize: '12px' }}
+                                          >
+                                            {[30, 60, 90, 120, 150, 180].map(min => (
+                                              <option key={min} value={min}>{min}</option>
+                                            ))}
+                                          </select>
+                                        </td>
+                                        <td className="px-3 py-2">
+                                          <div className="d-flex gap-1 align-items-center">
+                                            <select
+                                              className="form-select form-select-sm"
+                                              value={selectedSlotForSection[group.Section] ?? (group.bookedSlotId ?? '')}
+                                              onChange={(e) => handleSelectSlotForSection(group.Section, e.target.value)}
+                                              style={{ borderRadius: '4px', fontSize: '11px' }}
+                                            >
+                                              <option value="">— слот —</option>
+                                              {freeSlots && freeSlots.length > 0 ? freeSlots.map(slot => (
+                                                <option key={slot.id} value={slot.id} disabled={slot.is_booked && !isPendingLocal}>
+                                                  {new Date(slot.start_time).toLocaleString('ru', {month:'short', day:'numeric', hour:'2-digit', minute:'2-digit'})}
+                                                </option>
+                                              )) : null}
+                                            </select>
+                                            {isPendingLocal && (
+                                              <Badge bg="success" style={{ fontSize: '9px' }}>✓</Badge>
+                                            )}
+                                          </div>
+                                        </td>
+                                        <td className="text-end px-3 py-2">
+                                          <div className="d-flex justify-content-end gap-1">
+                                            {!isPendingLocal ? (
+                                              <button
+                                                onClick={() => handleBookSlotLocal(group.Section)}
+                                                className="btn btn-sm btn-primary"
+                                                disabled={!selectedSlotForSection[group.Section]}
+                                                style={{ borderRadius: '4px', fontSize: '11px', padding: '4px 8px' }}
+                                              >
+                                                Закрепить
+                                              </button>
+                                            ) : (
+                                              <button
+                                                onClick={() => cancelLocalBooking(group.Section)}
+                                                className="btn btn-sm btn-outline-secondary"
+                                                style={{ borderRadius: '4px', fontSize: '11px', padding: '4px 8px' }}
+                                              >
+                                                Отменить
+                                              </button>
+                                            )}
+                                            <button
+                                              onClick={() => deleteSection(group.Section)}
+                                              className="btn btn-sm btn-danger d-flex align-items-center gap-1"
+                                              disabled={isPendingLocal}
+                                              style={{ borderRadius: '4px', fontSize: '11px', padding: '4px 8px' }}
+                                            >
+                                              <Trash2 size={12} />
+                                            </button>
+                                          </div>
+                                        </td>
+                                      </tr>
+                                    );
+                                  })
+                                ) : (
+                                  <tr>
+                                    <td colSpan="10" className="text-center py-4 text-muted">
+                                      <BookOpen size={32} style={{ opacity: 0.3 }} />
+                                      <p className="mb-0 mt-2" style={{ fontSize: '13px' }}>Нет групп</p>
+                                    </td>
+                                  </tr>
+                                )}
+                              </tbody>
+                            </Table>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  );
+                })
+              ) : (
+                <div className="text-center py-5 text-muted">
+                  <BookOpen size={48} style={{ opacity: 0.3 }} />
+                  <p className="mb-0 mt-2" style={{ fontSize: '14px' }}>
+                    {searchQuery ? 'Ничего не найдено' : 'Нет предметов'}
+                  </p>
+                </div>
+              )}
             </div>
           </div>
         </div>
       </div>
 
       <style>{`
-        .hover-row:hover {
-          background-color: #e9ecef !important;
-          cursor: pointer;
-        }
-
         .btn-red {
-          background-color: #C8102E;
-          border-color: #C8102E;
+          background: #dc3545;
+          border: none;
           color: white;
         }
 
         .btn-red:hover:not(:disabled) {
-          background-color: #a00d25;
-          border-color: #a00d25;
+          background: #c82333;
           color: white;
         }
 
         .btn-red:disabled {
           opacity: 0.6;
-          cursor: not-allowed;
-        }
-
-        .btn-blue {
-          background-color: #0d6efd;
-          border-color: #0d6efd;
-          color: white;
-        }
-
-        .btn-blue:hover:not(:disabled) {
-          background-color: #0b5ed7;
-          border-color: #0b5ed7;
-          color: white;
         }
 
         .card {
-          transition: box-shadow 0.3s ease;
-        }
-
-        .card:hover {
-          box-shadow: 0 4px 12px rgba(0,0,0,0.1) !important;
+          transition: box-shadow 0.2s ease;
         }
 
         .form-control:focus,
         .form-select:focus {
-          border-color: #C8102E;
-          box-shadow: 0 0 0 0.2rem rgba(200, 16, 46, 0.15);
+          border-color: #0d6efd;
+          box-shadow: 0 0 0 0.15rem rgba(13, 110, 253, 0.15);
         }
 
         .disabled-page {
@@ -1027,7 +1061,6 @@ const ManagePredSubjectList = () => {
           opacity: 0.6;
         }
 
-        /* Стиль для скроллбара */
         *::-webkit-scrollbar {
           width: 8px;
           height: 8px;
@@ -1035,16 +1068,36 @@ const ManagePredSubjectList = () => {
 
         *::-webkit-scrollbar-track {
           background: #f1f1f1;
-          border-radius: 4px;
         }
 
         *::-webkit-scrollbar-thumb {
-          background: #c8c8c8;
+          background: #c1c1c1;
           border-radius: 4px;
         }
 
         *::-webkit-scrollbar-thumb:hover {
           background: #a8a8a8;
+        }
+
+        .btn {
+          transition: all 0.15s ease;
+        }
+
+        .btn:hover:not(:disabled) {
+          transform: translateY(-1px);
+        }
+
+        .btn:active:not(:disabled) {
+          transform: translateY(0);
+        }
+
+        .form-check-input:checked {
+          background-color: #0d6efd;
+          border-color: #0d6efd;
+        }
+
+        .badge {
+          font-weight: 500;
         }
       `}</style>
     </div>
