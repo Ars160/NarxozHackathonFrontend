@@ -47,7 +47,7 @@ const Login = () => {
           <img
             src="/Logo.png"
             alt="UniSchedule"
-            className="w-32 h-32 object-contain mx-auto"
+            className="w-52 h-52 object-contain mx-auto"
           />
         </div>
 

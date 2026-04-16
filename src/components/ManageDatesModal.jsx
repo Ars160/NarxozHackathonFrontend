@@ -11,6 +11,7 @@ import {
 } from './ui/dialog';
 import { Button } from './ui/button';
 import { Input } from './ui/input';
+import { AbsoluteLoader } from './Loaderss';
 
 const ManageDatesModal = ({ show, onClose, dates, onComplete }) => {
   const [isLoading, setIsLoading] = useState(false);
@@ -169,16 +170,12 @@ const ManageDatesModal = ({ show, onClose, dates, onComplete }) => {
   return (
     <Dialog open={show} onOpenChange={(open) => !open && onClose()}>
       <DialogContent className="sm:max-w-2xl rounded-2xl p-0 overflow-hidden">
+        {isLoading && <AbsoluteLoader />}
         <DialogHeader className="bg-[#C8102E] px-6 py-4">
           <DialogTitle className="text-white text-lg font-semibold">Управление датами экзаменов</DialogTitle>
         </DialogHeader>
 
-        <div className="px-6 py-5 max-h-[65vh] overflow-y-auto space-y-5" style={{ position: 'relative' }}>
-          {isLoading && (
-            <div className="absolute inset-0 bg-white/80 flex items-center justify-center z-50">
-              <Loader2 size={32} className="animate-spin text-[#C8102E]" />
-            </div>
-          )}
+        <div className="px-6 py-5 max-h-[65vh] overflow-y-auto space-y-5">
 
           {/* Add date section */}
           <div className="p-4 border border-gray-100 rounded-xl bg-white shadow-sm space-y-3">

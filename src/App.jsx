@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Calendar, Search, User, Download, ArrowUpDown, LogIn, Filter, UserPlus } from 'lucide-react';
+import { Calendar, Search, User, Download, ArrowUpDown, LogIn, Filter, UserPlus, ChevronDown, ChevronUp, SlidersHorizontal } from 'lucide-react';
 import { toast } from 'react-toastify';
 import { scheduleApi } from './services/Api';
 import './styles/style.css';
@@ -29,6 +29,7 @@ const ExamScheduler = () => {
     proctor: ''
   });
   const [sortConfig, setSortConfig] = useState({ key: null, direction: 'ascending' });
+  const [filtersOpen, setFiltersOpen] = useState(false);
   const navigate = useNavigate();
 
   const [showModal, setShowModal] = useState(false);
@@ -252,55 +253,72 @@ const filterData = useCallback((data) => {
   };
 
   const renderFilterSection = () => (
-    <Card className="mb-6 border-0 shadow-sm rounded-xl bg-white overflow-visible">
-      <CardContent className="p-5">
-        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-7 gap-4 items-end">
-          {/* Фильтр по преподавателю */}
-          <div className="space-y-2">
-            <label className="text-sm font-medium text-gray-700">Преподаватель</label>
-            <Input type="text" name="instructor" value={filterCriteria.instructor} onChange={handleFilterChange} placeholder="Преподаватель" className="bg-gray-50 border-gray-200 focus-visible:ring-red" />
-          </div>
-          {/* Фильтр по предмету */}
-          <div className="space-y-2">
-            <label className="text-sm font-medium text-gray-700">Предмет</label>
-            <Input type="text" name="subject" value={filterCriteria.subject} onChange={handleFilterChange} placeholder="Предмет" className="bg-gray-50 border-gray-200 focus-visible:ring-red" />
-          </div>
-          {/* Фильтр по CRN */}
-          <div className="space-y-2">
-            <label className="text-sm font-medium text-gray-700">CRN</label>
-            <Input type="text" name="section" value={filterCriteria.section} onChange={handleFilterChange} placeholder="CRN" className="bg-gray-50 border-gray-200 focus-visible:ring-red" />
-          </div>
-          {/* Фильтр по аудитории */}
-          <div className="space-y-2">
-            <label className="text-sm font-medium text-gray-700">Аудитория</label>
-            <Input type="text" name="room" value={filterCriteria.room} onChange={handleFilterChange} placeholder="Аудитория" className="bg-gray-50 border-gray-200 focus-visible:ring-red" />
-          </div>
-          {/* Фильтр по дате */}
-          <div className="space-y-2">
-            <label className="text-sm font-medium text-gray-700">Дата</label>
-            <Input type="date" name="date" value={filterCriteria.date} onChange={handleFilterChange} className="bg-gray-50 border-gray-200 focus-visible:ring-red" />
-          </div>
-          {/* Фильтр по проктору */}
-          <div className="space-y-2">
-            <label className="text-sm font-medium text-gray-700">Проктор</label>
-            <Input type="text" name="proctor" value={filterCriteria.proctor} onChange={handleFilterChange} placeholder="Проктор" className="bg-gray-50 border-gray-200 focus-visible:ring-red" />
-          </div>
-          {/* Назначить проктора */}
-          <div className="space-y-2">
-            <label className="text-sm font-medium text-gray-700 block">&nbsp;</label>
-            <Button
-              onClick={handleProctor}
-              className="bg-red hover:bg-red-700 text-white w-full flex gap-2 rounded-lg py-2 h-10 shadow-sm border-0"
-              style={{ backgroundColor: '#C8102E' }}
-            >
-               <UserPlus size={18}/>
-               <span className="xl:hidden">Назначить Проктора</span>
-            </Button>
-          </div>
+    <div className="mb-6">
+      {/* Mobile: collapsible toggle */}
+      <button
+        onClick={() => setFiltersOpen(o => !o)}
+        className="md:hidden w-full flex items-center justify-between px-4 py-3 bg-white rounded-xl shadow-sm border border-gray-100 text-sm font-medium text-gray-700 mb-2"
+      >
+        <div className="flex items-center gap-2">
+          <SlidersHorizontal size={16} className="text-[#C8102E]" />
+          <span>Фильтры</span>
+          {Object.values(filterCriteria).some(v => v) && (
+            <span className="inline-flex items-center justify-center w-5 h-5 rounded-full bg-[#C8102E] text-white text-xs font-bold">
+              {Object.values(filterCriteria).filter(v => v).length}
+            </span>
+          )}
         </div>
-      </CardContent>
-      <AssignProctorModal show={showModal} onClose={handleCloseModal} />
-    </Card>
+        {filtersOpen
+          ? <ChevronUp size={16} className="text-gray-400" />
+          : <ChevronDown size={16} className="text-gray-400" />
+        }
+      </button>
+
+      {/* Filter fields: always visible on desktop, collapsible on mobile */}
+      <div className={`${filtersOpen ? 'block' : 'hidden'} md:block`}>
+        <Card className="border-0 shadow-sm rounded-xl bg-white overflow-visible">
+          <CardContent className="p-4 md:p-5">
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-7 gap-3 md:gap-4 items-end">
+              <div className="space-y-1.5">
+                <label className="text-xs font-medium text-gray-500 uppercase tracking-wide">Преподаватель</label>
+                <Input type="text" name="instructor" value={filterCriteria.instructor} onChange={handleFilterChange} placeholder="Преподаватель" className="bg-gray-50 border-gray-200 h-9 text-sm" />
+              </div>
+              <div className="space-y-1.5">
+                <label className="text-xs font-medium text-gray-500 uppercase tracking-wide">Предмет</label>
+                <Input type="text" name="subject" value={filterCriteria.subject} onChange={handleFilterChange} placeholder="Предмет" className="bg-gray-50 border-gray-200 h-9 text-sm" />
+              </div>
+              <div className="space-y-1.5">
+                <label className="text-xs font-medium text-gray-500 uppercase tracking-wide">CRN</label>
+                <Input type="text" name="section" value={filterCriteria.section} onChange={handleFilterChange} placeholder="CRN" className="bg-gray-50 border-gray-200 h-9 text-sm" />
+              </div>
+              <div className="space-y-1.5">
+                <label className="text-xs font-medium text-gray-500 uppercase tracking-wide">Аудитория</label>
+                <Input type="text" name="room" value={filterCriteria.room} onChange={handleFilterChange} placeholder="Аудитория" className="bg-gray-50 border-gray-200 h-9 text-sm" />
+              </div>
+              <div className="space-y-1.5">
+                <label className="text-xs font-medium text-gray-500 uppercase tracking-wide">Дата</label>
+                <Input type="date" name="date" value={filterCriteria.date} onChange={handleFilterChange} className="bg-gray-50 border-gray-200 h-9 text-sm" />
+              </div>
+              <div className="space-y-1.5">
+                <label className="text-xs font-medium text-gray-500 uppercase tracking-wide">Проктор</label>
+                <Input type="text" name="proctor" value={filterCriteria.proctor} onChange={handleFilterChange} placeholder="Проктор" className="bg-gray-50 border-gray-200 h-9 text-sm" />
+              </div>
+              <div className="space-y-1.5">
+                <label className="text-xs font-medium text-gray-500 uppercase tracking-wide block">&nbsp;</label>
+                <Button
+                  onClick={handleProctor}
+                  className="bg-[#C8102E] hover:bg-[#A00D26] text-white w-full flex gap-2 rounded-lg h-9 shadow-sm border-0 text-sm"
+                >
+                  <UserPlus size={16}/>
+                  <span className="xl:hidden">Назн. проктора</span>
+                </Button>
+              </div>
+            </div>
+          </CardContent>
+          <AssignProctorModal show={showModal} onClose={handleCloseModal} />
+        </Card>
+      </div>
+    </div>
   );
 
   const renderScheduleTable = (data) => (
@@ -381,70 +399,133 @@ const filterData = useCallback((data) => {
       <Navbar />
 
       <main className="container mx-auto px-4 py-8">
-        <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-6">
-          <div className="flex flex-wrap gap-3">
-            <Button
-              variant={selectedView === 'general' ? 'default' : 'outline'}
+        {/* ── Top bar: view toggle + action buttons ── */}
+        <div className="flex flex-col sm:flex-row justify-between items-stretch sm:items-center gap-3 mb-5">
+          {/* View toggle — full width on mobile */}
+          <div className="flex gap-1.5 bg-white border border-gray-200 rounded-xl p-1 shadow-sm w-full sm:w-auto">
+            <button
               onClick={() => setSelectedView('general')}
-              className={`flex items-center gap-2 h-11 px-6 rounded-xl ${selectedView === 'general' ? 'bg-[#C8102E] hover:bg-[#A00D26] text-white shadow-md' : 'text-[#C8102E] border-[#C8102E] hover:bg-[#F8E8E8]'}`}
+              className={`flex-1 sm:flex-none flex items-center justify-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 ${
+                selectedView === 'general'
+                  ? 'bg-[#C8102E] text-white shadow-sm'
+                  : 'text-gray-500 hover:text-gray-800'
+              }`}
             >
-              <Calendar size={18} />
-              <span className="text-base font-medium">Общее расписание</span>
-            </Button>
-            <Button
-              variant={selectedView === 'student' ? 'default' : 'outline'}
+              <Calendar size={15} />
+              Расписание
+            </button>
+            <button
               onClick={() => setSelectedView('student')}
-              className={`flex items-center gap-2 h-11 px-6 rounded-xl ${selectedView === 'student' ? 'bg-[#C8102E] hover:bg-[#A00D26] text-white shadow-md' : 'text-[#C8102E] border-[#C8102E] hover:bg-[#F8E8E8]'}`}
+              className={`flex-1 sm:flex-none flex items-center justify-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 ${
+                selectedView === 'student'
+                  ? 'bg-[#C8102E] text-white shadow-sm'
+                  : 'text-gray-500 hover:text-gray-800'
+              }`}
             >
-              <User size={18} />
-              <span className="text-base font-medium">Студент</span>
-            </Button>
+              <User size={15} />
+              По студенту
+            </button>
           </div>
-          <div className="flex flex-wrap gap-3">
+
+          {/* Action buttons (Desktop) */}
+          <div className="hidden sm:flex flex-wrap gap-2">
             <Button
               onClick={handleDownloadProctors}
-              className="bg-[#C8102E] hover:bg-[#A00D26] text-white flex items-center gap-2 rounded-xl shadow-sm"
+              className="bg-[#C8102E] hover:bg-[#A00D26] text-white flex items-center gap-1.5 rounded-xl shadow-sm h-9 px-3 text-xs md:text-sm"
+              title="Скачать список прокторов (.xlsx)"
             >
-              <Download size={18} />
-              Скачать список прокторов
+              <Download size={14} />
+              <span className="hidden sm:inline">Список прокторов</span>
+              <span className="sm:hidden">Прокторы</span>
             </Button>
             <Button
               variant="outline"
               onClick={onResetFilters}
-              className="text-[#C8102E] border-[#C8102E] hover:bg-[#F8E8E8] flex items-center gap-2 rounded-xl"
+              className="text-[#C8102E] border-[#C8102E] hover:bg-[#F8E8E8] flex items-center gap-1.5 rounded-xl h-9 px-3 text-xs md:text-sm"
+              title="Сбросить все фильтры"
             >
-              <Filter size={18} />
-              Сбросить фильтры
+              <Filter size={14} />
+              Сбросить
             </Button>
             <Button
               onClick={handleExport}
-              className="bg-[#C8102E] hover:bg-[#A00D26] text-white flex items-center gap-2 rounded-xl shadow-sm"
+              className="bg-[#C8102E] hover:bg-[#A00D26] text-white flex items-center gap-1.5 rounded-xl shadow-sm h-9 px-3 text-xs md:text-sm"
+              title="Экспорт полного расписания"
             >
-              <Download size={18} />
-              Экспорт
+              <Download size={14} />
+              <span className="hidden sm:inline">Экспорт расписания</span>
+              <span className="sm:hidden">.xlsx</span>
             </Button>
           </div>
         </div>
 
-        {selectedView === 'student' && (
-          <div className="mb-6 w-full md:max-w-md">
-            <div className="flex items-center rounded-xl overflow-hidden shadow-sm border border-[#C8102E]">
-              <Input
+        {/* ── Student search bar — smooth animation via inline style ── */}
+        <div
+          style={{
+            maxHeight: selectedView === 'student' ? '100px' : '0px',
+            opacity: selectedView === 'student' ? 1 : 0,
+            marginBottom: selectedView === 'student' ? '20px' : '0px',
+            overflow: 'hidden',
+            transition: 'max-height 0.4s cubic-bezier(0.4,0,0.2,1), opacity 0.35s ease, margin-bottom 0.4s ease',
+          }}
+        >
+          <div className="bg-white rounded-xl shadow-sm border border-gray-100 px-3 py-2.5">
+            <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-widest mb-1.5">Поиск по ID студента</p>
+            <div
+              className={`flex items-center rounded-lg overflow-hidden border transition-colors duration-200 ${
+                studentId ? 'border-[#C8102E]' : 'border-gray-200 focus-within:border-[#C8102E]'
+              }`}
+            >
+              <div className="pl-3 pr-2 flex items-center shrink-0">
+                <User size={15} className={`transition-colors duration-200 ${studentId ? 'text-[#C8102E]' : 'text-gray-300'}`} />
+              </div>
+              <input
                 type="text"
                 value={studentId}
                 onChange={(e) => setStudentId(e.target.value)}
-                placeholder="Введите ID студента"
-                className="border-0 rounded-none h-11 focus-visible:ring-0 text-base"
+                onKeyDown={(e) => e.key === 'Enter' && handleStudentSearch()}
+                placeholder="Например: S23071631"
+                className="flex-1 h-9 bg-transparent outline-none text-sm text-gray-900 placeholder:text-gray-300"
               />
               <button
                 onClick={handleStudentSearch}
-                className="bg-[#C8102E] hover:bg-[#A00D26] text-white h-11 px-6 transition-colors"
+                className="bg-[#C8102E] hover:bg-[#A00D26] active:scale-95 text-white h-9 px-4 flex items-center gap-1.5 transition-all duration-150 font-medium text-sm"
               >
-                <Search size={20} />
+                <Search size={15} />
+                <span className="hidden sm:inline">Найти</span>
               </button>
             </div>
           </div>
-        )}
+        </div>
+
+        {/* ── Action buttons (Mobile) - Centered below search ── */}
+        <div className="flex sm:hidden flex-wrap justify-center w-full gap-2 mb-6">
+          <Button
+            onClick={handleDownloadProctors}
+            className="bg-[#C8102E] hover:bg-[#A00D26] text-white flex items-center gap-1.5 rounded-xl shadow-sm h-9 px-3 text-xs"
+            title="Скачать список прокторов (.xlsx)"
+          >
+            <Download size={14} />
+            <span>Прокторы</span>
+          </Button>
+          <Button
+            variant="outline"
+            onClick={onResetFilters}
+            className="text-[#C8102E] border-[#C8102E] hover:bg-[#F8E8E8] flex items-center gap-1.5 rounded-xl h-9 px-3 text-xs"
+            title="Сбросить все фильтры"
+          >
+            <Filter size={14} />
+            <span>Сбросить</span>
+          </Button>
+          <Button
+            onClick={handleExport}
+            className="bg-[#C8102E] hover:bg-[#A00D26] text-white flex items-center gap-1.5 rounded-xl shadow-sm h-9 px-3 text-xs"
+            title="Экспорт полного расписания"
+          >
+            <Download size={14} />
+            <span>Экспорт</span>
+          </Button>
+        </div>
 
         {renderFilterSection()}
         {loading ? (
@@ -454,8 +535,69 @@ const filterData = useCallback((data) => {
           </div>
         ) : (
           <div>
-            <div className="mb-4 text-sm text-gray-500">Найдено записей: {filteredData.length}</div>
-            {renderScheduleTable(filteredData)}
+            <div className="mb-3 text-sm text-gray-500 font-medium">
+              Найдено записей: <span className="text-[#C8102E] font-semibold">{filteredData.length}</span>
+            </div>
+
+            {/* Desktop table */}
+            <div className="hidden md:block">
+              {renderScheduleTable(filteredData)}
+            </div>
+
+            {/* Mobile cards */}
+            <div className="md:hidden space-y-3">
+              {filteredData.length === 0 ? (
+                <div className="text-center py-14 text-gray-400">
+                  <div className="text-4xl mb-2">😕</div>
+                  <p className="text-sm">Нет данных для отображения</p>
+                </div>
+              ) : (
+                filteredData.map((exam, index) => (
+                  <Card key={index} className="border-0 shadow-sm rounded-2xl p-4 space-y-3 bg-white">
+                    {/* Subject + CRN */}
+                    <div className="flex items-start justify-between gap-2">
+                      <p className="font-semibold text-gray-900 text-sm leading-snug flex-1">{exam.Subject}</p>
+                      <Badge className="bg-[#F8E8E8] text-[#C8102E] border-0 hover:bg-[#F8E8E8] shrink-0 font-semibold">
+                        {exam.Section}
+                      </Badge>
+                    </div>
+                    {/* Instructor */}
+                    <p className="text-sm text-gray-500 flex items-center gap-1.5">
+                      <User size={13} className="text-gray-400 shrink-0" />
+                      {exam.Instructor}
+                    </p>
+                    {/* Date / Time / Room */}
+                    <div className="grid grid-cols-3 gap-2 text-xs">
+                      <div className="bg-gray-50 rounded-lg px-2 py-1.5 text-center">
+                        <p className="text-gray-400 mb-0.5">Дата</p>
+                        <p className="font-medium text-gray-700">{formatDate(exam.Date)}</p>
+                      </div>
+                      <div className="bg-gray-50 rounded-lg px-2 py-1.5 text-center">
+                        <p className="text-gray-400 mb-0.5">Время</p>
+                        <p className="font-medium text-gray-700">{exam.Time_Slot}</p>
+                      </div>
+                      <div className="bg-gray-50 rounded-lg px-2 py-1.5 text-center">
+                        <p className="text-gray-400 mb-0.5">Ауд.</p>
+                        <p className="font-medium text-[#C8102E]">{exam.Room}</p>
+                      </div>
+                    </div>
+                    {/* Proctor + Entry */}
+                    <div className="flex items-center justify-between pt-1">
+                      <span className="text-xs text-gray-400">
+                        {exam.Proctor ? `Проктор: ${exam.Proctor}` : 'Проктор не назначен'}
+                      </span>
+                      <Button
+                        size="sm"
+                        onClick={() => handleEntryClick(exam)}
+                        className="bg-[#C8102E] hover:bg-[#A00D26] text-white flex items-center gap-1.5 rounded-xl shadow-sm h-8 px-3 text-xs"
+                      >
+                        <LogIn size={13} /> Войти
+                      </Button>
+                    </div>
+                  </Card>
+                ))
+              )}
+            </div>
           </div>
         )}
       </main>

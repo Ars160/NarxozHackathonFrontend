@@ -4,6 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import { toast } from 'react-toastify';
 import { Loader2, UploadCloud, FileText } from 'lucide-react';
 import ManageDatesModal from './ManageDatesModal';
+import { AbsoluteLoader } from './Loaderss';
 import {
   Dialog,
   DialogContent,
@@ -109,16 +110,12 @@ const CreateExamModal = ({ show, onClose }) => {
     <>
       <Dialog open={show} onOpenChange={(open) => !open && onClose()}>
         <DialogContent className="sm:max-w-lg rounded-2xl p-0 overflow-hidden">
+          {isLoading && <AbsoluteLoader />}
           <DialogHeader className="bg-[#C8102E] px-6 py-4">
             <DialogTitle className="text-white text-lg font-semibold">Создать новый экзамен</DialogTitle>
           </DialogHeader>
 
           <div className="px-6 py-5 space-y-4 max-h-[65vh] overflow-y-auto">
-            {isLoading && (
-              <div className="absolute inset-0 bg-white/80 flex items-center justify-center z-50 rounded-2xl">
-                <Loader2 size={32} className="animate-spin text-[#C8102E]" />
-              </div>
-            )}
 
             <div className="space-y-1.5">
               <label className="text-sm font-medium text-gray-700">Название экзамена</label>

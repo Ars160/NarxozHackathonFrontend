@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'react-toastify';
-import { CheckCircle, XCircle, Users, Loader2, Zap } from 'lucide-react';
+import { CheckCircle, XCircle, Users, Loader2, Zap, RefreshCw } from 'lucide-react';
 import '../styles/style.css';
 import Navbar from '../components/NavBar';
 import { GlobalLoader } from '../components/Loaderss';
@@ -21,26 +21,31 @@ const AdminManagePage = () => {
 
   const [subAdmins, setSubAdmins] = useState(defaultAdmins);
   const [scheduleLoading, setScheduleLoading] = useState(false);
+  const [isRefreshing, setIsRefreshing] = useState(false);
   const navigate = useNavigate();
 
+  const fetchSubAdmins = async () => {
+    setIsRefreshing(true);
+    try {
+      const data = await scheduleApi.getSubAdminsStatus();
+      if (!data.has_drafts) navigate('/');
+      setSubAdmins(
+        defaultAdmins.map((defaultAdmin) => {
+          const backendAdmin = Array.isArray(data.statuses)
+            ? data.statuses.find((admin) => admin.role.toLowerCase() === defaultAdmin.role.toLowerCase())
+            : null;
+          return backendAdmin ? { ...defaultAdmin, ready: backendAdmin.status === 'ready' } : defaultAdmin;
+        })
+      );
+    } catch (error) {
+      console.error('Error fetching subAdmins:', error);
+      toast.error('Ошибка загрузки статусов');
+    } finally {
+      setIsRefreshing(false);
+    }
+  };
+
   useEffect(() => {
-    const fetchSubAdmins = async () => {
-      try {
-        const data = await scheduleApi.getSubAdminsStatus();
-        if (!data.has_drafts) navigate('/');
-        setSubAdmins(
-          defaultAdmins.map((defaultAdmin) => {
-            const backendAdmin = Array.isArray(data.statuses)
-              ? data.statuses.find((admin) => admin.role.toLowerCase() === defaultAdmin.role.toLowerCase())
-              : null;
-            return backendAdmin ? { ...defaultAdmin, ready: backendAdmin.status === 'ready' } : defaultAdmin;
-          })
-        );
-      } catch (error) {
-        console.error('Error fetching subAdmins:', error);
-        toast.error('Ошибка загрузки статусов');
-      }
-    };
     fetchSubAdmins();
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
@@ -98,9 +103,18 @@ const AdminManagePage = () => {
         </div>
 
         {!allReady && (
-          <div className="mb-6 px-4 py-3 border border-amber-200 bg-amber-50 rounded-xl text-amber-700 text-sm flex items-center gap-2">
-            <Loader2 size={16} className="animate-spin shrink-0" />
-            Ожидаем подтверждения от всех администраторов факультетов...
+          <div className="mb-6 px-4 py-3 border border-amber-200 bg-amber-50 rounded-xl flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-amber-700 text-sm">
+            <span>
+              Ожидаем подтверждения от всех администраторов факультетов... 
+            </span>
+            <button 
+              onClick={fetchSubAdmins} 
+              disabled={isRefreshing}
+              className="flex items-center justify-center gap-2 h-9 px-4 text-xs font-semibold rounded-lg bg-white border border-amber-200 hover:bg-amber-100 text-amber-800 transition-colors shadow-sm disabled:opacity-50"
+            >
+              <RefreshCw size={14} className={isRefreshing ? 'animate-spin' : ''} />
+              Обновить
+            </button>
           </div>
         )}
 
