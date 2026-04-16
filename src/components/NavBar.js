@@ -70,7 +70,7 @@ const Navbar = () => {
   const adminDashboardButton = <LayoutDashboard size={20} />;
 
   return (
-    <nav className="navbar navbar-expand-lg bg-red text-white py-3 shadow-sm" style={{ backgroundColor: '#C8102E' }}>
+    <nav className="bg-red text-white py-4 shadow-md sticky top-0 z-50">
       <ToastContainer
         position="top-right"
         autoClose={3000}
@@ -83,14 +83,13 @@ const Navbar = () => {
         pauseOnHover
         theme="light"
       />
-      <div className="container">
-        <h1 className="navbar-brand mb-0 h2 text-white">GENERATION EXAM</h1>
-        <div className="d-flex gap-3 align-items-center">
+      <div className="container mx-auto px-4 flex justify-between items-center">
+        <h1 className="text-2xl font-bold tracking-wide m-0">GENERATION EXAM</h1>
+        <div className="flex gap-4 items-center">
           {adminDashboardiSVisible && (
             <Link
               to="/admin-dashboard"
-              className="btn btn-light text-red d-flex align-items-center gap-2"
-              style={{ color: '#C8102E' }}
+              className="flex items-center gap-2 bg-white text-red hover:bg-red-light px-4 py-2 rounded-xl shadow-sm transition-all duration-200 font-medium"
             >
               {adminDashboardButton}
               <span>Админ страница</span>
@@ -98,8 +97,7 @@ const Navbar = () => {
           )}
           <button
             onClick={additionalButtonAction}
-            className="btn btn-light text-red d-flex align-items-center gap-2"
-            style={{ color: '#C8102E' }}
+            className="flex items-center gap-2 bg-white text-red hover:bg-red-light px-4 py-2 rounded-xl shadow-sm transition-all duration-200 font-medium"
           >
             {additionalButtonIcon}
             <span>{additionalButtonText}</span>

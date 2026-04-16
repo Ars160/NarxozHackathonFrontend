@@ -1,16 +1,17 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'react-toastify';
-import { CheckCircle, XCircle, Users } from 'lucide-react';
-import { Table } from 'react-bootstrap';
-import 'bootstrap/dist/css/bootstrap.min.css';
+import { CheckCircle, XCircle, Users, Loader2, Zap } from 'lucide-react';
 import '../styles/style.css';
 import Navbar from '../components/NavBar';
 import { GlobalLoader } from '../components/Loaderss';
 import { scheduleApi } from '../services/Api';
+import { Button } from '../components/ui/button';
+import { Card, CardContent } from '../components/ui/card';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../components/ui/table';
+import { Badge } from '../components/ui/badge';
 
 const AdminManagePage = () => {
-  // Фиксированный список ролей
   const defaultAdmins = [
     { id: 1, role: 'Admin-SDT', ready: false },
     { id: 2, role: 'Admin-SEM', ready: false },
@@ -26,20 +27,13 @@ const AdminManagePage = () => {
     const fetchSubAdmins = async () => {
       try {
         const data = await scheduleApi.getSubAdminsStatus();
-        console.log(data.has_drafts);
-        
-        if(!data.has_drafts){
-          navigate('/')
-        }
-
+        if (!data.has_drafts) navigate('/');
         setSubAdmins(
           defaultAdmins.map((defaultAdmin) => {
             const backendAdmin = Array.isArray(data.statuses)
               ? data.statuses.find((admin) => admin.role.toLowerCase() === defaultAdmin.role.toLowerCase())
               : null;
-            return backendAdmin
-              ? { ...defaultAdmin, ready: backendAdmin.status === 'ready' }
-              : defaultAdmin;
+            return backendAdmin ? { ...defaultAdmin, ready: backendAdmin.status === 'ready' } : defaultAdmin;
           })
         );
       } catch (error) {
@@ -48,12 +42,13 @@ const AdminManagePage = () => {
       }
     };
     fetchSubAdmins();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const handleGenerate = async () => {
     setScheduleLoading(true);
     try {
-      const response = await scheduleApi.generateSchedule();
+      await scheduleApi.generateSchedule();
       toast.success('Расписание успешно сгенерировано');
       navigate('/');
     } catch (error) {
@@ -65,76 +60,97 @@ const AdminManagePage = () => {
   };
 
   const allReady = subAdmins.every((admin) => admin.ready);
+  const readyCount = subAdmins.filter(a => a.ready).length;
 
   return (
-    <div className={`container-fluid p-0 min-vh-100 ${scheduleLoading ? 'disabled-page' : ''}`}>
+    <div className="min-h-screen bg-[#F8F9FA]">
       <Navbar showFilterButton={false} />
-      
-      <div className="container mt-4">
-        {scheduleLoading && <GlobalLoader />}
-        
-        <div className="d-flex flex-column flex-lg-row justify-content-between gap-3 mb-4">
-          <button
+
+      {scheduleLoading && <GlobalLoader />}
+
+      <main className="container mx-auto px-4 py-8">
+        <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-6">
+          <div>
+            <h2 className="text-2xl font-bold text-gray-900">Управление расписанием</h2>
+            <p className="text-sm text-gray-500 mt-0.5">
+              Готово администраторов:{' '}
+              <span className={`font-semibold ${allReady ? 'text-emerald-600' : 'text-[#C8102E]'}`}>
+                {readyCount} / {subAdmins.length}
+              </span>
+            </p>
+          </div>
+
+          <Button
             onClick={handleGenerate}
-            className="btn btn-red d-flex gap-2 py-2 px-4"
             disabled={scheduleLoading || !allReady}
+            className={`flex items-center gap-2 h-11 px-6 rounded-xl font-semibold shadow-md transition-all
+              ${allReady
+                ? 'bg-[#C8102E] hover:bg-[#A00D26] text-white'
+                : 'bg-gray-200 text-gray-400 cursor-not-allowed'
+              }`}
           >
             {scheduleLoading ? (
-              <>
-                <span className="spinner-border spinner-border-sm me-2" role="status" />
-                Генерация...
-              </>
+              <><Loader2 size={18} className="animate-spin" /> Генерация...</>
             ) : (
-              'Сгенерировать'
+              <><Zap size={18} /> Сгенерировать расписание</>
             )}
-          </button>
+          </Button>
         </div>
 
-        <div className="card shadow-sm">
-          <div className="card-header bg-white border-bottom p-4">
-            <h2 className="h4 mb-0 d-flex align-items-center gap-2">
-              <Users size={24} style={{ color: '#C8102E' }} />
-              Статус subAdmin
-            </h2>
+        {!allReady && (
+          <div className="mb-6 px-4 py-3 border border-amber-200 bg-amber-50 rounded-xl text-amber-700 text-sm flex items-center gap-2">
+            <Loader2 size={16} className="animate-spin shrink-0" />
+            Ожидаем подтверждения от всех администраторов факультетов...
           </div>
-          
-          <div className="card-body p-4">
-            <div className="table-responsive">
-              <Table className="table-hover mb-0">
-                <thead className="bg-light">
-                  <tr>
-                    <th style={{ width: '70%' }}>SubAdmin</th>
-                    <th className="text-center">Готово</th>
-                  </tr>
-                </thead>
-                
-                <tbody>
-                  {subAdmins.length > 0 ? (
-                    subAdmins.map((admin) => (
-                      <tr key={admin.id}>
-                        <td>{admin.role}</td>
-                        <td className="text-center">
-                          {admin.ready ? (
-                            <CheckCircle size={20} style={{ color: 'green' }} />
-                          ) : (
-                            <XCircle size={20} style={{ color: 'red' }} />
-                          )}
-                        </td>
-                      </tr>
-                    ))
-                  ) : (
-                    <tr>
-                      <td colSpan="2" className="text-center py-4 text-muted">
-                        Нет subAdmin
-                      </td>
-                    </tr>
-                  )}
-                </tbody>
-              </Table>
+        )}
+
+        <Card className="border-0 shadow-sm rounded-2xl overflow-hidden">
+          <div className="flex items-center gap-3 px-6 py-4 border-b border-gray-100">
+            <div className="w-9 h-9 rounded-xl bg-[#F8E8E8] flex items-center justify-center">
+              <Users size={18} className="text-[#C8102E]" />
             </div>
+            <h3 className="font-semibold text-gray-900">Статус администраторов</h3>
           </div>
-        </div>
-      </div>
+          <CardContent className="p-0">
+            <Table>
+              <TableHeader>
+                <TableRow className="bg-gray-50 hover:bg-gray-50">
+                  <TableHead className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Администратор</TableHead>
+                  <TableHead className="text-xs font-semibold text-gray-500 uppercase tracking-wide text-center w-36">Статус</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {subAdmins.length > 0 ? (
+                  subAdmins.map((admin) => (
+                    <TableRow key={admin.id} className="hover:bg-gray-50/50">
+                      <TableCell className="font-medium text-gray-800">{admin.role}</TableCell>
+                      <TableCell className="text-center">
+                        {admin.ready ? (
+                          <Badge className="bg-emerald-50 text-emerald-700 border-0 gap-1.5 hover:bg-emerald-50">
+                            <CheckCircle size={13} />
+                            Готов
+                          </Badge>
+                        ) : (
+                          <Badge className="bg-gray-100 text-gray-500 border-0 gap-1.5 hover:bg-gray-100">
+                            <XCircle size={13} />
+                            Ожидание
+                          </Badge>
+                        )}
+                      </TableCell>
+                    </TableRow>
+                  ))
+                ) : (
+                  <TableRow>
+                    <TableCell colSpan={2} className="text-center py-10 text-gray-400 text-sm">
+                      Нет администраторов
+                    </TableCell>
+                  </TableRow>
+                )}
+              </TableBody>
+            </Table>
+          </CardContent>
+        </Card>
+      </main>
     </div>
   );
 };

@@ -1,12 +1,15 @@
 import { useCallback, useEffect, useState } from 'react';
-import 'bootstrap/dist/css/bootstrap.min.css';
 import '../styles/style.css';
 import Navbar from './NavBar';
-import { ClipboardList, LogIn, Trash2 } from 'lucide-react';
+import { ClipboardList, LogIn, Trash2, CalendarDays } from 'lucide-react';
 import CreateExamModal from './CreateExamModal';
 import { scheduleApi } from '../services/Api';
 import { toast } from 'react-toastify';
 import { useNavigate } from 'react-router-dom';
+import { Button } from './ui/button';
+import { Card } from './ui/card';
+import { Badge } from './ui/badge';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from './ui/table';
 
 const CreateExamPage = () => {
   const [showModal, setShowModal] = useState(false);
@@ -44,7 +47,7 @@ const CreateExamPage = () => {
     try {
       const data = await scheduleApi.getSessions();
       setSessions(data);
-      toast.success('Сессии успешно загружено');
+      toast.success('Сессии успешно загружены');
     } catch (err) {
       toast.error('Ошибка при загрузке сессий');
       console.error(err);
@@ -78,101 +81,110 @@ const CreateExamPage = () => {
     fetchSessions();
   }, [fetchSessions]);
 
-  return (
-    <div className="container-fluid p-0 min-vh-100">
-      <Navbar />
-      
-      <div className="container mt-4">
-        <div className="row g-3 mb-4">
-          <div className="d-flex justify-content-between align-items-center mb-3 flex-wrap">
-            <div className="d-flex gap-3 flex-wrap">
-              <button
-                onClick={handleCreateExam}
-                className={'btn btn-red text-white d-flex align-items-center gap-2 py-2 px-4'}
-                style={{
-                  backgroundColor: '#C8102E',
-                  borderColor: '#C8102E',
-                  color: 'white',
-                  cursor: canCreateExam ? 'pointer' : 'not-allowed',
-                  opacity: canCreateExam ? 1 : 0.6
-                }}
-                disabled={!canCreateExam}
-              >
-                <ClipboardList size={20} />
-                <span className="fs-5">Создать экзамен</span>
-              </button>
-            </div>
-          </div>
+  const formatDate = (dateStr, withTime = false) => {
+    const opts = { day: '2-digit', month: '2-digit', year: 'numeric', timeZone: 'UTC' };
+    if (withTime) {
+      opts.hour = '2-digit';
+      opts.minute = '2-digit';
+      opts.hour12 = false;
+    }
+    return new Date(dateStr).toLocaleString('ru-RU', opts);
+  };
 
-          <div className="container mt-4">
-            <div className="table-responsive rounded-lg shadow-sm table-container">
-              <table className="table table-narxoz">
-                <thead>
-                  <tr>
-                    <th>Название</th>
-                    <th>Дата создания</th>
-                    <th>Дата начала</th>
-                    <th>Период проведения</th>
-                    <th>Активация</th>
-                    <th>Действия</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {sessions.length > 0 ? (
-                    sessions.map((session) => (
-                      <tr key={session.created_at}>
-                        <td data-label="Название">{session.title}</td>
-                        <td data-label="Дата создания">
-                          {new Date(session.created_at).toLocaleString('ru-RU', {
-                            timeZone: 'UTC',
-                            day: '2-digit',
-                            month: '2-digit',
-                            year: 'numeric',
-                            hour: '2-digit',
-                            minute: '2-digit',
-                            hour12: false
-                          })}
-                        </td>
-                        <td data-label="Дата начала">{new Date(session.start_date).toLocaleDateString()}</td>
-                        <td data-label="Период проведения">{session.days}</td>
-                        
-                        <td data-label="Активация">
-                          <button
-                            onClick={() => handleActiveSession(session.id)}
-                            className="btn btn-blue btn-sm d-inline-flex align-items-center"
-                          >
-                            <LogIn size={16} className="me-1" />
-                            <span>Вход</span>
-                          </button>
-                        </td>
-                        <td data-label="Действия">
-                          <button
-                            onClick={() => deleteSession(session.id, session.title)}
-                            className="btn btn-red btn-sm d-inline-flex align-items-center"
-                          >
-                            <Trash2 size={16} className="me-1"/>
-                            <span>Удалить</span>
-                          </button>
-                        </td>
-                      </tr>
-                    ))
-                  ) : (
-                    <tr>
-                      <td colSpan="6" className="text-center py-4 text-muted">
-                        <div className="d-flex flex-column align-items-center">
-                          <span className="h5 mb-3">&#128533;</span>
-                          Нет данных для отображения
-                        </div>
-                      </td>
-                    </tr>
-                  )}
-                </tbody>
-              </table>
-            </div>
+  return (
+    <div className="min-h-screen bg-[#F8F9FA]">
+      <Navbar />
+
+      <main className="container mx-auto px-4 py-8">
+        {/* Header */}
+        <div className="flex items-center justify-between mb-6">
+          <div>
+            <h2 className="text-2xl font-bold text-gray-900">Управление сессиями</h2>
+            <p className="text-sm text-gray-500 mt-0.5">
+              Создайте новую сессию или активируйте существующую
+            </p>
           </div>
+          <Button
+            onClick={handleCreateExam}
+            disabled={!canCreateExam}
+            className="bg-[#C8102E] hover:bg-[#A00D26] text-white flex items-center gap-2 h-11 px-6 rounded-xl shadow-md disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            <ClipboardList size={18} />
+            <span className="font-medium">Создать экзамен</span>
+          </Button>
         </div>
-      </div>
-      
+
+        {/* Sessions Table */}
+        <Card className="border-0 shadow-sm rounded-2xl overflow-hidden">
+          <Table>
+            <TableHeader>
+              <TableRow className="bg-[#C8102E] hover:bg-[#C8102E]">
+                {['Название', 'Дата создания', 'Дата начала', 'Период', 'Активация', 'Действия'].map(label => (
+                  <TableHead key={label} className="text-white font-medium">
+                    {label}
+                  </TableHead>
+                ))}
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {sessions.length > 0 ? (
+                sessions.map((session) => (
+                  <TableRow key={session.created_at} className="hover:bg-[#F8E8E8]/40 transition-colors">
+                    <TableCell className="font-semibold text-gray-900">
+                      <div className="flex items-center gap-2">
+                        <CalendarDays size={16} className="text-[#C8102E] shrink-0" />
+                        {session.title}
+                      </div>
+                    </TableCell>
+                    <TableCell className="text-gray-600 text-sm whitespace-nowrap">
+                      {formatDate(session.created_at, true)}
+                    </TableCell>
+                    <TableCell className="text-gray-600 text-sm whitespace-nowrap">
+                      {formatDate(session.start_date)}
+                    </TableCell>
+                    <TableCell>
+                      <Badge variant="secondary" className="bg-gray-100 text-gray-700 border-0">
+                        {session.days} дн.
+                      </Badge>
+                    </TableCell>
+                    <TableCell>
+                      <Button
+                        size="sm"
+                        onClick={() => handleActiveSession(session.id)}
+                        className="bg-[#0066CC] hover:bg-[#0052A3] text-white flex items-center gap-1.5 rounded-lg shadow-sm"
+                      >
+                        <LogIn size={14} />
+                        Активировать
+                      </Button>
+                    </TableCell>
+                    <TableCell>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => deleteSession(session.id, session.title)}
+                        className="text-red-600 border-red-200 hover:bg-red-50 hover:border-red-400 flex items-center gap-1.5 rounded-lg"
+                      >
+                        <Trash2 size={14} />
+                        Удалить
+                      </Button>
+                    </TableCell>
+                  </TableRow>
+                ))
+              ) : (
+                <TableRow>
+                  <TableCell colSpan={6} className="text-center py-16 text-gray-400">
+                    <div className="flex flex-col items-center gap-2">
+                      <span className="text-4xl">😕</span>
+                      <span className="text-sm">Нет сессий для отображения</span>
+                    </div>
+                  </TableCell>
+                </TableRow>
+              )}
+            </TableBody>
+          </Table>
+        </Card>
+      </main>
+
       <CreateExamModal show={showModal} onClose={handleCloseModal} />
     </div>
   );

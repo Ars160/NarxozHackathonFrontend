@@ -1,11 +1,55 @@
 import React, { useState } from 'react';
-import { Modal, Button, Form, Spinner } from 'react-bootstrap';
 import { scheduleApi } from '../services/Api';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'react-toastify';
+import { Loader2, UploadCloud, FileText } from 'lucide-react';
 import ManageDatesModal from './ManageDatesModal';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from './ui/dialog';
+import { Button } from './ui/button';
+import { Input } from './ui/input';
 
-const CreateExamModal = ({ show, onClose}) => {
+// Определяем ВНЕ основного компонента — иначе React сбрасывает state при каждом рендере
+const FileField = ({ label, onFileChange }) => {
+  const [fileName, setFileName] = React.useState(null);
+
+  const handleChange = (e) => {
+    const file = e.target.files[0];
+    setFileName(file ? file.name : null);
+    onFileChange(file);
+  };
+
+  return (
+    <div className="space-y-1.5">
+      <label className="text-sm font-medium text-gray-700">{label}</label>
+      <label className={`flex items-center gap-3 px-3 py-2.5 border rounded-xl cursor-pointer transition-all
+        ${fileName ? 'border-emerald-400 bg-emerald-50' : 'border-gray-200 bg-gray-50 hover:border-[#C8102E]'}`}>
+        {fileName
+          ? <FileText size={16} className="text-emerald-600 shrink-0" />
+          : <UploadCloud size={16} className="text-gray-400 shrink-0" />
+        }
+        <span className={`text-sm truncate flex-1 ${
+          fileName ? 'text-emerald-700 font-medium' : 'text-gray-400'
+        }`}>
+          {fileName || 'Выберите .xlsx файл...'}
+        </span>
+        <input
+          type="file"
+          accept=".xlsx,.xls"
+          onChange={handleChange}
+          className="hidden"
+        />
+      </label>
+    </div>
+  );
+};
+
+const CreateExamModal = ({ show, onClose }) => {
   const [isLoading, setIsLoading] = useState(false);
   const [name, setName] = useState('');
   const [fileExams, setFileExams] = useState(null);
@@ -18,7 +62,6 @@ const CreateExamModal = ({ show, onClose}) => {
   const navigate = useNavigate();
 
   const handleSubmit = async () => {
-    // Validate form fields
     if (!name || !fileExams || !fileRooms || !fileFaculties || !startDate || !numDays) {
       toast.error('Пожалуйста, заполните все поля формы');
       return;
@@ -35,19 +78,13 @@ const CreateExamModal = ({ show, onClose}) => {
 
     try {
       const response = await scheduleApi.createExam(formData);
-
-      // If we have dates in the response, show the dates modal
       if (response && response.dates) {
         setExamDates(response.dates);
         setShowDatesModal(true);
       } else {
-        // If no dates in response, proceed to manage subjects
         onClose();
         navigate('/manage-subject-list', {
-          state: {
-            message: `Экзамен успешно создан!`,
-            type: 'success',
-          },
+          state: { message: 'Экзамен успешно создан!', type: 'success' },
         });
       }
     } catch (err) {
@@ -61,86 +98,95 @@ const CreateExamModal = ({ show, onClose}) => {
   const handleDatesComplete = async () => {
     setShowDatesModal(false);
     onClose();
-    await scheduleApi.sendEmailsSubadmin()
+    await scheduleApi.sendEmailsSubadmin();
     navigate('/admin-manage-list', {
-      state: {
-        message: `Экзамен успешно создан и даты настроены!`,
-        type: 'success',
-      },
+      state: { message: 'Экзамен успешно создан и даты настроены!', type: 'success' },
     });
   };
 
-  const loadingOverlayStyle = {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-    backgroundColor: 'rgba(255, 255, 255, 0.8)',
-    color: '#C8102E',
-    display: 'flex',
-    justifyContent: 'center',
-    alignItems: 'center',
-    zIndex: 1000,
-  };
 
   return (
     <>
-      <Modal show={show} onHide={onClose}>
-        <Modal.Header closeButton style={{ backgroundColor: '#C8102E', color: 'white' }}>
-          <Modal.Title>Создать новый экзамен</Modal.Title>
-        </Modal.Header>
-        <Modal.Body>
-          {isLoading && (
-            <div style={loadingOverlayStyle}>
-              <Spinner animation="border" role="status">
-                <span className="visually-hidden">Загрузка...</span>
-              </Spinner>
-            </div>
-          )}
-          <Form>
-            <Form.Group controlId="formName" className="mb-2">
-              <Form.Label>Название Экзамена</Form.Label>
-              <Form.Control type="text" onChange={(e) => setName(e.target.value)} />
-            </Form.Group>
-            <Form.Group controlId="formFileExams" className="mb-3">
-              <Form.Label>Файл с экзаменами</Form.Label>
-              <Form.Control type="file" onChange={(e) => setFileExams(e.target.files[0])} />
-            </Form.Group>
-            <Form.Group controlId="formFileRooms" className="mb-3">
-              <Form.Label>Файл с аудиториями</Form.Label>
-              <Form.Control type="file" onChange={(e) => setFileRooms(e.target.files[0])} />
-            </Form.Group>
-            <Form.Group controlId="formFileFaculties" className="mb-3">
-              <Form.Label>Файл с факультетами</Form.Label>
-              <Form.Control type="file" onChange={(e) => setFileFaculties(e.target.files[0])} />
-            </Form.Group>
-            <Form.Group controlId="formStartDate" className="mb-2">
-              <Form.Label>Дата начала</Form.Label>
-              <Form.Control type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)} />
-            </Form.Group>
-            <Form.Group controlId="formNumDays" className="mb-2">
-              <Form.Label>Количество дней</Form.Label>
-              <Form.Control type="number" value={numDays} onChange={(e) => setNumDays(e.target.value)} />
-            </Form.Group>
-          </Form>
-        </Modal.Body>
-        <Modal.Footer>
-          <Button variant="secondary" onClick={onClose} disabled={isLoading}>
-            Отмена
-          </Button>
-          <Button 
-            variant="primary" 
-            onClick={handleSubmit} 
-            disabled={isLoading}
-            style={{ backgroundColor: '#C8102E', borderColor: '#C8102E' }}
-          >
-            Создать
-          </Button>
-        </Modal.Footer>
-      </Modal>
+      <Dialog open={show} onOpenChange={(open) => !open && onClose()}>
+        <DialogContent className="sm:max-w-lg rounded-2xl p-0 overflow-hidden">
+          <DialogHeader className="bg-[#C8102E] px-6 py-4">
+            <DialogTitle className="text-white text-lg font-semibold">Создать новый экзамен</DialogTitle>
+          </DialogHeader>
 
-      <ManageDatesModal 
+          <div className="px-6 py-5 space-y-4 max-h-[65vh] overflow-y-auto">
+            {isLoading && (
+              <div className="absolute inset-0 bg-white/80 flex items-center justify-center z-50 rounded-2xl">
+                <Loader2 size={32} className="animate-spin text-[#C8102E]" />
+              </div>
+            )}
+
+            <div className="space-y-1.5">
+              <label className="text-sm font-medium text-gray-700">Название экзамена</label>
+              <Input
+                type="text"
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                placeholder="Введите название"
+                className="rounded-xl bg-gray-50 border-gray-200 focus-visible:ring-[#C8102E]"
+              />
+            </div>
+
+            <FileField label="Файл с экзаменами" onFileChange={(f) => setFileExams(f)} />
+            <FileField label="Файл с аудиториями" onFileChange={(f) => setFileRooms(f)} />
+            <FileField label="Файл с факультетами" onFileChange={(f) => setFileFaculties(f)} />
+
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-1.5">
+                <label className="text-sm font-medium text-gray-700">Дата начала</label>
+                <Input
+                  type="date"
+                  value={startDate}
+                  onChange={(e) => setStartDate(e.target.value)}
+                  className="rounded-xl bg-gray-50 border-gray-200 focus-visible:ring-[#C8102E]"
+                />
+              </div>
+              <div className="space-y-1.5">
+                <label className="text-sm font-medium text-gray-700">Количество дней</label>
+                <Input
+                  type="number"
+                  value={numDays}
+                  onChange={(e) => setNumDays(e.target.value)}
+                  placeholder="30"
+                  min="1"
+                  className="rounded-xl bg-gray-50 border-gray-200 focus-visible:ring-[#C8102E]"
+                />
+              </div>
+            </div>
+          </div>
+
+          <DialogFooter className="px-6 py-4 bg-gray-50 border-t gap-2">
+            <Button
+              variant="outline"
+              onClick={onClose}
+              disabled={isLoading}
+              className="rounded-xl"
+            >
+              Отмена
+            </Button>
+            <Button
+              onClick={handleSubmit}
+              disabled={isLoading}
+              className="bg-[#C8102E] hover:bg-[#A00D26] text-white rounded-xl shadow-sm"
+            >
+              {isLoading ? (
+                <>
+                  <Loader2 size={16} className="animate-spin mr-2" />
+                  Создание...
+                </>
+              ) : (
+                'Создать'
+              )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <ManageDatesModal
         show={showDatesModal}
         onClose={() => setShowDatesModal(false)}
         dates={examDates}

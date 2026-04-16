@@ -1,9 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'react-toastify';
-import { Search, Trash2, BookOpen, Users, Calendar, CheckCircle, ArrowUpDown, ChevronDown, ChevronRight } from 'lucide-react';
-import { Form, Table, Badge } from 'react-bootstrap';
-import 'bootstrap/dist/css/bootstrap.min.css';
+import { Trash2, BookOpen, Users, Calendar, CheckCircle, ArrowUpDown, ChevronDown, ChevronRight } from 'lucide-react';
 import '../styles/style.css';
 import Navbar from './NavBar';
 import { scheduleApi } from '../services/Api';
@@ -36,6 +34,7 @@ const ManagePredSubjectList = () => {
     if (viewed) {
       setViewedSubjects(new Set(JSON.parse(viewed)));
     }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   useEffect(() => {
@@ -656,9 +655,9 @@ const ManagePredSubjectList = () => {
                 </button>
                 
                 {Object.keys(pendingChanges).length > 0 && (
-                  <Badge bg="warning" text="dark" className="py-1 px-2" style={{ fontSize: '12px' }}>
+                  <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-amber-100 text-amber-800">
                     Изменений: {Object.keys(pendingChanges).length}
-                  </Badge>
+                  </span>
                 )}
               </div>
               
@@ -740,9 +739,9 @@ const ManagePredSubjectList = () => {
                           )}
                           <strong style={{ fontSize: '14px' }}>{subject}</strong>
                           {isExpanded && subjectGroups[subject] && (
-                            <Badge bg="secondary" style={{ fontSize: '11px' }}>
+                            <span className="inline-flex items-center px-1.5 py-0.5 rounded-full text-xs font-medium bg-gray-200 text-gray-700 ml-1">
                               {subjectGroups[subject].length} групп
-                            </Badge>
+                            </span>
                           )}
                         </div>
                         
@@ -854,8 +853,8 @@ const ManagePredSubjectList = () => {
                                 ) : (
                                   'Слоты не загружены'
                                 )}
-                                {pendingBookings.length > 0 && (
-                                  <Badge bg="success" className="ms-2" style={{ fontSize: '10px' }}>Выбрано: {pendingBookings.length}</Badge>
+                              {pendingBookings.length > 0 && (
+                                  <span className="inline-flex items-center px-1.5 py-0.5 rounded text-xs font-medium bg-emerald-100 text-emerald-800 ml-1">Выбрано: {pendingBookings.length}</span>
                                 )}
                               </div>
                             </div>
@@ -863,7 +862,7 @@ const ManagePredSubjectList = () => {
 
                           {/* Таблица групп */}
                           <div style={{ maxHeight: '500px', overflowY: 'auto', overflowX: 'auto' }}>
-                            <Table className="mb-0 table-sm" hover style={{ minWidth: '1200px', fontSize: '13px' }}>
+                            <table className="mb-0 w-full border-collapse" style={{ minWidth: '1200px', fontSize: '13px' }}>
                               <thead style={{ 
                                 position: 'sticky', 
                                 top: 0, 
@@ -898,29 +897,29 @@ const ManagePredSubjectList = () => {
                                         <td className="px-3 py-2">{group.EduProgram}</td>
                                         <td className="px-3 py-2">{group.Instructor}</td>
                                         <td className="text-center px-2 py-2">
-                                          <Form.Check 
-                                            type="switch"
+                                          <input
+                                            type="checkbox"
                                             checked={group.has_exam}
                                             onChange={(e) => handleExamToggle(group.Section, e.target.checked)}
-                                            style={{ display: 'inline-block', transform: 'scale(0.9)' }}
+                                            className="w-4 h-4 accent-[#C8102E] cursor-pointer rounded"
                                           />
                                         </td>
                                         <td className="text-center px-2 py-2">
-                                          <Form.Check 
-                                            type="switch"
+                                          <input
+                                            type="checkbox"
                                             checked={group.has_proctor}
                                             onChange={(e) => handleProctorToggle(group.Section, e.target.checked)}
                                             disabled={!group.has_exam}
-                                            style={{ display: 'inline-block', transform: 'scale(0.9)' }}
+                                            className="w-4 h-4 accent-[#C8102E] cursor-pointer rounded disabled:opacity-40"
                                           />
                                         </td>
                                         <td className="text-center px-2 py-2">
-                                          <Form.Check 
-                                            type="switch"
+                                          <input
+                                            type="checkbox"
                                             checked={group.two_rooms_needed}
                                             onChange={(e) => handleRoomReqToggle(group.Section, e.target.checked)}
                                             disabled={!group.has_exam}
-                                            style={{ display: 'inline-block', transform: 'scale(0.9)' }}
+                                            className="w-4 h-4 accent-[#C8102E] cursor-pointer rounded disabled:opacity-40"
                                           />
                                         </td>
                                         <td className="px-2 py-2 text-center">
@@ -964,7 +963,7 @@ const ManagePredSubjectList = () => {
                                               )) : null}
                                             </select>
                                             {isPendingLocal && (
-                                              <Badge bg="success" style={{ fontSize: '9px' }}>✓</Badge>
+                                              <span className="inline-flex items-center px-1 py-0.5 rounded text-xs font-bold bg-emerald-100 text-emerald-700">✓</span>
                                             )}
                                           </div>
                                         </td>
@@ -1010,7 +1009,7 @@ const ManagePredSubjectList = () => {
                                   </tr>
                                 )}
                               </tbody>
-                            </Table>
+                            </table>
                           </div>
                         </div>
                       )}

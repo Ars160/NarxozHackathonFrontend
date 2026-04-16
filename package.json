@@ -3,18 +3,20 @@
   "version": "0.1.0",
   "private": true,
   "dependencies": {
+    "@radix-ui/react-dialog": "^1.1.15",
+    "@radix-ui/react-slot": "^1.2.4",
     "axios": "^1.8.4",
-    "bootstrap": "^5.3.3",
+    "class-variance-authority": "^0.7.1",
     "cra-template": "1.2.0",
     "file-saver": "^2.0.5",
     "framer-motion": "^12.23.24",
     "lucide-react": "^0.470.0",
     "react": "^18.3.1",
-    "react-bootstrap": "^2.10.9",
     "react-dom": "^18.3.1",
     "react-router-dom": "^7.1.2",
     "react-scripts": "^5.0.1",
-    "react-toastify": "^11.0.3"
+    "react-toastify": "^11.0.3",
+    "tailwindcss-animate": "^1.0.7"
   },
   "scripts": {
     "start": "react-scripts start",
@@ -39,5 +41,12 @@
       "last 1 firefox version",
       "last 1 safari version"
     ]
+  },
+  "devDependencies": {
+    "autoprefixer": "^10.4.27",
+    "clsx": "^2.1.1",
+    "postcss": "^8.5.9",
+    "tailwind-merge": "^3.5.0",
+    "tailwindcss": "^3.4.19"
   }
 }

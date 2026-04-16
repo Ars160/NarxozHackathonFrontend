@@ -1,9 +1,12 @@
 import { useEffect, useState } from "react";
 import { toast } from "react-toastify";
-import { RefreshCcw, AlertCircle, Clock, BookOpen, Users, MapPin } from "lucide-react";
-import "bootstrap/dist/css/bootstrap.min.css";
+import { RefreshCcw, AlertCircle, Clock, BookOpen, Users, MapPin, ChevronDown, ChevronUp } from "lucide-react";
 import Navbar from "./NavBar";
 import { LocalLoader } from "./Loaderss";
+import { Button } from './ui/button';
+import { Badge } from './ui/badge';
+import { Card } from './ui/card';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from './ui/table';
 
 const API_URL = "http://localhost:5000/api";
 
@@ -29,11 +32,8 @@ const AdminDashboard = () => {
 
   const toggleRow = (idx) => {
     const newExpanded = new Set(expandedRows);
-    if (newExpanded.has(idx)) {
-      newExpanded.delete(idx);
-    } else {
-      newExpanded.add(idx);
-    }
+    if (newExpanded.has(idx)) newExpanded.delete(idx);
+    else newExpanded.add(idx);
     setExpandedRows(newExpanded);
   };
 
@@ -42,174 +42,133 @@ const AdminDashboard = () => {
   }, []);
 
   return (
-    <div className="min-vh-100" style={{ backgroundColor: "#f5f7fa" }}>
+    <div className="min-h-screen bg-[#F8F9FA]">
       <Navbar showFilterButton={false} />
 
-      <div className="container-fluid px-4 py-3">
+      <main className="container mx-auto px-4 py-8">
         {loading && <LocalLoader />}
-        
-        {/* Компактный заголовок */}
-        <div className="d-flex justify-content-between align-items-center mb-3">
+
+        {/* Header */}
+        <div className="flex justify-between items-center mb-6">
           <div>
-            <h4 className="fw-bold text-dark mb-0">Конфликты расписания</h4>
-            <small className="text-muted">Обнаружено конфликтов: {conflicts.length}</small>
+            <h2 className="text-2xl font-bold text-gray-900">Конфликты расписания</h2>
+            <p className="text-sm text-gray-500 mt-0.5">
+              Обнаружено конфликтов:{" "}
+              <span className="font-semibold text-[#C8102E]">{conflicts.length}</span>
+            </p>
           </div>
-          <button
+          <Button
+            variant="outline"
             onClick={fetchConflicts}
-            className="btn btn-sm btn-light border d-flex align-items-center gap-2"
             disabled={loading}
-            style={{ borderRadius: "6px" }}
+            className="flex items-center gap-2 rounded-xl border-gray-200 hover:bg-gray-50"
           >
-            <RefreshCcw size={16} /> Обновить
-          </button>
+            <RefreshCcw size={16} />
+            Обновить
+          </Button>
         </div>
 
-        {/* Компактная таблица */}
-        <div className="card border-0 shadow-sm" style={{ borderRadius: "10px" }}>
-          <div className="table-responsive">
-            <table className="table table-hover mb-0" style={{ fontSize: "0.9rem" }}>
-              <thead style={{ backgroundColor: "#f8f9fa" }}>
-                <tr>
-                  <th className="border-0 py-2 ps-3" style={{ width: "100px", fontSize: "0.8rem", color: "#6c757d", fontWeight: "600" }}>Дата</th>
-                  <th className="border-0 py-2" style={{ width: "120px", fontSize: "0.8rem", color: "#6c757d", fontWeight: "600" }}>Студент</th>
-                  <th className="border-0 py-2" style={{ fontSize: "0.8rem", color: "#6c757d", fontWeight: "600" }}>Конфликтующие экзамены</th>
-                  <th className="border-0 py-2 pe-3" style={{ width: "60px", fontSize: "0.8rem", color: "#6c757d", fontWeight: "600" }}></th>
-                </tr>
-              </thead>
-              <tbody>
-                {conflicts.length === 0 ? (
-                  <tr>
-                    <td colSpan="4" className="text-center py-5">
-                      <AlertCircle size={40} className="text-muted mb-2" style={{ opacity: 0.3 }} />
-                      <p className="text-muted mb-0 small">Конфликтов не найдено</p>
-                    </td>
-                  </tr>
-                ) : (
-                  conflicts.map((conflict, idx) => (
-                    <>
-                      <tr 
-                        key={idx} 
-                        style={{ 
-                          borderBottom: expandedRows.has(idx) ? "none" : "1px solid #f0f0f0",
-                          cursor: "pointer",
-                          backgroundColor: expandedRows.has(idx) ? "#fafbfc" : "transparent"
-                        }}
-                        onClick={() => toggleRow(idx)}
-                      >
-                        <td className="py-2 ps-3 align-middle">
-                          <small className="text-muted">
-                            {new Date(conflict.date).toLocaleDateString("ru-RU", { day: "2-digit", month: "2-digit" })}
-                          </small>
-                        </td>
-                        <td className="py-2 align-middle">
-                          <span className="badge" style={{ 
-                            backgroundColor: "#e8f4fd", 
-                            color: "#0c5a8a",
-                            padding: "4px 10px",
-                            borderRadius: "5px",
-                            fontWeight: "500",
-                            fontSize: "0.8rem"
-                          }}>
-                            {conflict.student}
-                          </span>
-                        </td>
-                        <td className="py-2 align-middle">
-                          <div className="d-flex flex-wrap gap-2 align-items-center">
+        {/* Table Card */}
+        <Card className="border-0 shadow-sm rounded-2xl overflow-hidden">
+          <Table>
+            <TableHeader>
+              <TableRow className="bg-gray-50 hover:bg-gray-50">
+                <TableHead className="text-xs font-semibold text-gray-500 uppercase tracking-wide w-24">Дата</TableHead>
+                <TableHead className="text-xs font-semibold text-gray-500 uppercase tracking-wide w-32">Студент</TableHead>
+                <TableHead className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Конфликтующие экзамены</TableHead>
+                <TableHead className="w-12" />
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {conflicts.length === 0 ? (
+                <TableRow>
+                  <TableCell colSpan={4} className="text-center py-16">
+                    <div className="flex flex-col items-center gap-2 text-gray-400">
+                      <AlertCircle size={40} className="opacity-30" />
+                      <p className="text-sm">Конфликтов не найдено</p>
+                    </div>
+                  </TableCell>
+                </TableRow>
+              ) : (
+                conflicts.map((conflict, idx) => (
+                  <>
+                    <TableRow
+                      key={idx}
+                      onClick={() => toggleRow(idx)}
+                      className={`cursor-pointer transition-colors ${expandedRows.has(idx) ? 'bg-gray-50/80' : 'hover:bg-gray-50/50'}`}
+                    >
+                      <TableCell className="text-sm text-gray-500 font-medium">
+                        {new Date(conflict.date).toLocaleDateString("ru-RU", { day: "2-digit", month: "2-digit" })}
+                      </TableCell>
+                      <TableCell>
+                        <Badge className="bg-blue-50 text-blue-700 border-0 font-medium hover:bg-blue-50">
+                          {conflict.student}
+                        </Badge>
+                      </TableCell>
+                      <TableCell>
+                        <div className="flex flex-wrap gap-2 items-center">
+                          {(conflict.exams || []).map((exam, examIdx) => (
+                            <div
+                              key={examIdx}
+                              className="inline-flex items-center gap-1.5 px-2 py-1 bg-amber-50 border border-amber-200 rounded-lg text-xs"
+                              title={`${exam.Subject}\n${exam.Section}\nАудитория: ${exam.Room}\nПреподаватель: ${exam.Instructor}`}
+                            >
+                              <Clock size={12} className="text-amber-500" />
+                              <span className="font-semibold text-gray-800">{exam.Time_Slot}</span>
+                              <span className="text-gray-400">•</span>
+                              <span className="text-gray-600 max-w-[180px] truncate">{exam.Section}</span>
+                            </div>
+                          ))}
+                          <Badge className="bg-[#C8102E] text-white border-0 text-xs hover:bg-[#C8102E]">
+                            {conflict.exams?.length || 0}
+                          </Badge>
+                        </div>
+                      </TableCell>
+                      <TableCell className="text-right">
+                        <button className="text-gray-400">
+                          {expandedRows.has(idx) ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
+                        </button>
+                      </TableCell>
+                    </TableRow>
+
+                    {/* Expanded detail rows */}
+                    {expandedRows.has(idx) && (
+                      <TableRow className="bg-gray-50/60 hover:bg-gray-50/60">
+                        <TableCell colSpan={4} className="p-4">
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                             {(conflict.exams || []).map((exam, examIdx) => (
-                              <div 
-                                key={examIdx}
-                                className="d-inline-flex align-items-center gap-2 px-2 py-1"
-                                style={{
-                                  backgroundColor: "#fff3cd",
-                                  borderRadius: "5px",
-                                  border: "1px solid #ffc107",
-                                  fontSize: "0.8rem"
-                                }}
-                                title={`${exam.Subject}\n${exam.Section}\nАудитория: ${exam.Room}\nПреподаватель: ${exam.Instructor}`}
-                              >
-                                <Clock size={14} className="text-warning" />
-                                <span className="fw-semibold text-dark">{exam.Time_Slot}</span>
-                                <span className="text-muted">•</span>
-                                <span className="text-truncate" style={{ maxWidth: "200px" }}>
+                              <div key={examIdx} className="bg-white border border-amber-200 rounded-xl p-4 shadow-sm">
+                                <div className="flex justify-between items-start mb-2">
+                                  <h6 className="font-bold text-gray-900 text-sm leading-tight">{exam.Subject}</h6>
+                                  <Badge className="bg-amber-100 text-amber-700 border-0 text-xs hover:bg-amber-100">
+                                    Экзамен {examIdx + 1}
+                                  </Badge>
+                                </div>
+                                <Badge variant="outline" className="mb-3 text-xs">
                                   {exam.Section}
-                                </span>
+                                </Badge>
+                                <div className="space-y-1 text-xs text-gray-500">
+                                  <div className="flex items-center gap-2"><Clock size={12} /><span>{exam.Time_Slot} ({exam.Duration} мин)</span></div>
+                                  <div className="flex items-center gap-2"><MapPin size={12} /><span>Аудитория {exam.Room}</span></div>
+                                  <div className="flex items-center gap-2"><Users size={12} /><span>{exam.Students_Count} студентов</span></div>
+                                  <div className="flex items-center gap-2"><BookOpen size={12} /><span className="truncate">{exam.Instructor}</span></div>
+                                </div>
+                                {exam.EduProgram && (
+                                  <p className="mt-2 pt-2 border-t text-xs text-gray-400">{exam.EduProgram}</p>
+                                )}
                               </div>
                             ))}
-                            <span className="badge bg-danger">{conflict.exams?.length || 0}</span>
                           </div>
-                        </td>
-                        <td className="py-2 pe-3 align-middle text-end">
-                          <button 
-                            className="btn btn-sm btn-link text-decoration-none p-0"
-                            style={{ fontSize: "0.75rem", color: "#6c757d" }}
-                          >
-                            {expandedRows.has(idx) ? "▲" : "▼"}
-                          </button>
-                        </td>
-                      </tr>
-                      
-                      {/* Развернутая информация */}
-                      {expandedRows.has(idx) && (
-                        <tr style={{ backgroundColor: "#fafbfc", borderBottom: "1px solid #f0f0f0" }}>
-                          <td colSpan="4" className="p-3">
-                            <div className="row g-3">
-                              {(conflict.exams || []).map((exam, examIdx) => (
-                                <div key={examIdx} className="col-md-6">
-                                  <div className="card border" style={{ borderRadius: "8px", borderColor: "#ffc107" }}>
-                                    <div className="card-body p-3">
-                                      <div className="d-flex justify-content-between align-items-start mb-2">
-                                        <h6 className="mb-0 fw-bold" style={{ fontSize: "0.9rem", color: "#212529" }}>
-                                          {exam.Subject}
-                                        </h6>
-                                        <span className="badge bg-warning text-dark" style={{ fontSize: "0.7rem" }}>
-                                          Экзамен {examIdx + 1}
-                                        </span>
-                                      </div>
-                                      
-                                      <div className="mb-2">
-                                        <span className="badge bg-light text-dark border" style={{ fontSize: "0.75rem" }}>
-                                          {exam.Section}
-                                        </span>
-                                      </div>
-
-                                      <div className="d-flex flex-column gap-1" style={{ fontSize: "0.8rem" }}>
-                                        <div className="d-flex align-items-center gap-2 text-muted">
-                                          <Clock size={14} />
-                                          <span>{exam.Time_Slot} ({exam.Duration} мин)</span>
-                                        </div>
-                                        <div className="d-flex align-items-center gap-2 text-muted">
-                                          <MapPin size={14} />
-                                          <span>Аудитория {exam.Room}</span>
-                                        </div>
-                                        <div className="d-flex align-items-center gap-2 text-muted">
-                                          <Users size={14} />
-                                          <span>{exam.Students_Count} студентов</span>
-                                        </div>
-                                        <div className="d-flex align-items-center gap-2 text-muted">
-                                          <BookOpen size={14} />
-                                          <span className="text-truncate">{exam.Instructor}</span>
-                                        </div>
-                                      </div>
-
-                                      <div className="mt-2 pt-2 border-top">
-                                        <small className="text-muted d-block">{exam.EduProgram}</small>
-                                      </div>
-                                    </div>
-                                  </div>
-                                </div>
-                              ))}
-                            </div>
-                          </td>
-                        </tr>
-                      )}
-                    </>
-                  ))
-                )}
-              </tbody>
-            </table>
-          </div>
-        </div>
-      </div>
+                        </TableCell>
+                      </TableRow>
+                    )}
+                  </>
+                ))
+              )}
+            </TableBody>
+          </Table>
+        </Card>
+      </main>
     </div>
   );
 };

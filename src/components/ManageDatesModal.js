@@ -1,68 +1,58 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { Modal, Button, Form, Spinner } from 'react-bootstrap';
-import { Plus, RotateCcw } from 'lucide-react';
+import { Plus, RotateCcw, Loader2, X as XIcon } from 'lucide-react';
 import { toast } from 'react-toastify';
 import { scheduleApi } from '../services/Api';
-
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from './ui/dialog';
+import { Button } from './ui/button';
+import { Input } from './ui/input';
 
 const ManageDatesModal = ({ show, onClose, dates, onComplete }) => {
   const [isLoading, setIsLoading] = useState(false);
   const [selectedDates, setSelectedDates] = useState([]);
   const [customDate, setCustomDate] = useState('');
 
-  // Функция для сортировки дат с использованием useCallback
   const sortDates = useCallback((dates) => {
     return [...dates].sort((a, b) => new Date(a) - new Date(b));
   }, []);
 
-  // Обновление состояния с сортировкой с использованием useCallback
   const updateDatesWithSort = useCallback((newDates) => {
-    const sortedDates = sortDates(newDates);
-    setSelectedDates(sortedDates);
+    setSelectedDates(sortDates(newDates));
   }, [sortDates]);
 
   useEffect(() => {
-    if (dates) {
-      updateDatesWithSort(dates);
-    }
+    if (dates) updateDatesWithSort(dates);
   }, [dates, updateDatesWithSort]);
 
   const handleRemoveDate = async (dateToRemove) => {
     setIsLoading(true);
     try {
       const response = await scheduleApi.removeDate(dateToRemove);
-      const data = response;
-      console.log('Server response after removing date:', data);
-      updateDatesWithSort(data.dates || []);
+      updateDatesWithSort(response.dates || []);
       toast.success(`Дата ${dateToRemove} успешно удалена`);
     } catch (error) {
-      console.error('Error removing date:', error);
       toast.error('Ошибка при удалении даты');
     } finally {
       setIsLoading(false);
     }
   };
-  
-  const handleAddCustomDate = async () => {
-    if (!customDate) {
-      toast.warning('Выберите дату для добавления');
-      return;
-    }
 
-    if (selectedDates.includes(customDate)) {
-      toast.info(`Дата ${customDate} уже существует`);
-      return;
-    }
+  const handleAddCustomDate = async () => {
+    if (!customDate) { toast.warning('Выберите дату для добавления'); return; }
+    if (selectedDates.includes(customDate)) { toast.info(`Дата ${customDate} уже существует`); return; }
 
     setIsLoading(true);
     try {
       const response = await scheduleApi.addCustomDate(customDate);
-      const data = response;
-      updateDatesWithSort(data.dates);
+      updateDatesWithSort(response.dates);
       setCustomDate('');
       toast.success(`Дата ${customDate} успешно добавлена`);
     } catch (error) {
-      console.error('Error adding date:', error);
       toast.error('Ошибка при добавлении даты');
     } finally {
       setIsLoading(false);
@@ -73,45 +63,26 @@ const ManageDatesModal = ({ show, onClose, dates, onComplete }) => {
     setIsLoading(true);
     try {
       const response = await scheduleApi.restoreDates();
-      const data = response;
-      updateDatesWithSort(data.dates || []);
+      updateDatesWithSort(response.dates || []);
       toast.success('Даты успешно восстановлены');
     } catch (error) {
-      console.error('Error restoring dates:', error);
       toast.error('Ошибка при восстановлении дат');
     } finally {
       setIsLoading(false);
     }
   };
 
-  const handleComplete = () => {
-    onComplete(selectedDates);
-  };
-
-  const loadingOverlayStyle = {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-    backgroundColor: 'rgba(255, 255, 255, 0.8)',
-    color: '#C8102E',
-    display: 'flex',
-    justifyContent: 'center',
-    alignItems: 'center',
-    zIndex: 1000,
-  };
+  const handleComplete = () => onComplete(selectedDates);
 
   const getDayOfWeek = (dateStr) => {
-    const date = new Date(dateStr);
     const days = ['Вс', 'Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб'];
-    return days[date.getDay()];
+    return days[new Date(dateStr).getDay()];
   };
 
   const getMonthYear = (dateStr) => {
     const date = new Date(dateStr);
-    const months = ['Январь', 'Февраль', 'Март', 'Апрель', 'Май', 'Июнь', 
-                    'Июль', 'Август', 'Сентябрь', 'Октябрь', 'Ноябрь', 'Декабрь'];
+    const months = ['Январь', 'Февраль', 'Март', 'Апрель', 'Май', 'Июнь',
+      'Июль', 'Август', 'Сентябрь', 'Октябрь', 'Ноябрь', 'Декабрь'];
     return `${months[date.getMonth()]} ${date.getFullYear()}`;
   };
 
@@ -119,9 +90,7 @@ const ManageDatesModal = ({ show, onClose, dates, onComplete }) => {
     const grouped = {};
     selectedDates.forEach(dateStr => {
       const monthYear = getMonthYear(dateStr);
-      if (!grouped[monthYear]) {
-        grouped[monthYear] = [];
-      }
+      if (!grouped[monthYear]) grouped[monthYear] = [];
       grouped[monthYear].push(dateStr);
     });
     return grouped;
@@ -129,124 +98,62 @@ const ManageDatesModal = ({ show, onClose, dates, onComplete }) => {
 
   const renderCalendarMonth = (dates, monthKey) => {
     if (!dates || dates.length === 0) return null;
-
-    // Создаем Set для быстрой проверки наличия даты
     const dateSet = new Set(dates.map(d => new Date(d).getDate()));
-    
-    // Получаем первую дату месяца для определения начала
     const firstDate = new Date(dates[0]);
     const year = firstDate.getFullYear();
     const month = firstDate.getMonth();
-    
-    // Первый день месяца
     const firstDayOfMonth = new Date(year, month, 1);
     const lastDayOfMonth = new Date(year, month + 1, 0);
-    
-    // День недели первого дня (0 = воскресенье, 1 = понедельник, и т.д.)
     let startDay = firstDayOfMonth.getDay();
-    // Конвертируем: понедельник = 0, воскресенье = 6
     startDay = startDay === 0 ? 6 : startDay - 1;
-    
     const totalDays = lastDayOfMonth.getDate();
-    
-    // Создаем массив недель
     const weeks = [];
     let currentWeek = [];
-    
-    // Заполняем пустые ячейки в начале
-    for (let i = 0; i < startDay; i++) {
-      currentWeek.push(null);
-    }
-    
-    // Заполняем дни месяца
+
+    for (let i = 0; i < startDay; i++) currentWeek.push(null);
     for (let day = 1; day <= totalDays; day++) {
       const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
-      const hasExam = dateSet.has(day);
-      
-      currentWeek.push({
-        day: day,
-        dateStr: dateStr,
-        hasExam: hasExam
-      });
-      
-      // Если воскресенье (7 дней в неделе), начинаем новую неделю
-      if (currentWeek.length === 7) {
-        weeks.push([...currentWeek]);
-        currentWeek = [];
-      }
+      currentWeek.push({ day, dateStr, hasExam: dateSet.has(day) });
+      if (currentWeek.length === 7) { weeks.push([...currentWeek]); currentWeek = []; }
     }
-    
-    // Заполняем последнюю неделю пустыми ячейками
     if (currentWeek.length > 0) {
-      while (currentWeek.length < 7) {
-        currentWeek.push(null);
-      }
+      while (currentWeek.length < 7) currentWeek.push(null);
       weeks.push(currentWeek);
     }
 
     return (
-      <div key={monthKey} className="mb-4">
-        <h6 className="mb-3 text-muted">{monthKey}</h6>
-        <div className="border rounded p-3" style={{ backgroundColor: '#f8f9fa' }}>
-          {/* Заголовки дней недели */}
-          <div className="d-flex mb-2">
+      <div key={monthKey} className="mb-5">
+        <h6 className="mb-3 text-sm font-semibold text-gray-500 uppercase tracking-wide">{monthKey}</h6>
+        <div className="border border-gray-100 rounded-xl p-3 bg-gray-50/50">
+          <div className="flex mb-2">
             {['Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб', 'Вс'].map(day => (
-              <div key={day} className="text-center fw-bold" style={{ width: '14.28%', fontSize: '13px', color: '#666' }}>
+              <div key={day} className="text-center font-semibold text-xs text-gray-400" style={{ width: '14.28%' }}>
                 {day}
               </div>
             ))}
           </div>
-          
-          {/* Недели с датами */}
           {weeks.map((week, weekIndex) => (
-            <div key={weekIndex} className="d-flex gap-2 mb-2">
+            <div key={weekIndex} className="flex gap-1 mb-1">
               {week.map((dayObj, dayIndex) => {
-                if (!dayObj) {
-                  return <div key={`empty-${weekIndex}-${dayIndex}`} style={{ width: '14.28%' }} />;
-                }
-                
-                if (!dayObj.hasExam) {
-                  return (
-                    <div key={`noexam-${dayObj.day}`} style={{ width: '14.28%' }}>
-                      <div className="text-center p-2" style={{ color: '#ccc', fontSize: '14px' }}>
-                        {dayObj.day}
-                      </div>
-                    </div>
-                  );
-                }
-                
+                if (!dayObj) return <div key={`e-${weekIndex}-${dayIndex}`} style={{ width: '14.28%' }} />;
+                if (!dayObj.hasExam) return (
+                  <div key={`n-${dayObj.day}`} style={{ width: '14.28%' }} className="text-center py-2 text-gray-300 text-sm">
+                    {dayObj.day}
+                  </div>
+                );
                 return (
-                  <div 
-                    key={dayObj.dateStr} 
-                    style={{ width: '14.28%' }}
-                  >
-                    <div 
-                      className="card text-center position-relative"
-                      style={{ 
-                        backgroundColor: '#C8102E',
-                        color: 'white',
-                        border: 'none',
-                        minHeight: '65px'
-                      }}
-                    >
+                  <div key={dayObj.dateStr} style={{ width: '14.28%' }}>
+                    <div className="relative rounded-xl overflow-hidden bg-[#C8102E] text-white text-center" style={{ minHeight: '60px' }}>
                       <button
                         onClick={() => handleRemoveDate(dayObj.dateStr)}
-                        className="btn-close btn-close-white position-absolute"
-                        style={{ 
-                          fontSize: '10px',
-                          top: '4px',
-                          right: '4px',
-                          padding: '4px'
-                        }}
+                        className="absolute top-1 right-1 w-4 h-4 flex items-center justify-center rounded-full bg-white/20 hover:bg-white/40 transition-colors"
                         aria-label="Удалить"
-                      />
-                      <div className="card-body p-2 d-flex flex-column justify-content-center align-items-center">
-                        <div style={{ fontSize: '24px', fontWeight: 'bold', lineHeight: '1' }}>
-                          {dayObj.day}
-                        </div>
-                        <div style={{ fontSize: '11px', marginTop: '4px', opacity: 0.9 }}>
-                          {getDayOfWeek(dayObj.dateStr)}
-                        </div>
+                      >
+                        <XIcon size={10} />
+                      </button>
+                      <div className="flex flex-col items-center justify-center h-full py-2">
+                        <div className="text-xl font-bold leading-none">{dayObj.day}</div>
+                        <div className="text-xs mt-1 opacity-80">{getDayOfWeek(dayObj.dateStr)}</div>
                       </div>
                     </div>
                   </div>
@@ -260,79 +167,86 @@ const ManageDatesModal = ({ show, onClose, dates, onComplete }) => {
   };
 
   return (
-    <Modal show={show} onHide={onClose} size="lg">
-      <Modal.Header closeButton style={{ backgroundColor: '#C8102E', color: 'white' }}>
-        <Modal.Title>Управление датами экзаменов</Modal.Title>
-      </Modal.Header>
-      <Modal.Body style={{ maxHeight: '70vh', overflowY: 'auto' }}>
-        {isLoading && (
-          <div style={loadingOverlayStyle}>
-            <Spinner animation="border" role="status">
-              <span className="visually-hidden">Загрузка...</span>
-            </Spinner>
+    <Dialog open={show} onOpenChange={(open) => !open && onClose()}>
+      <DialogContent className="sm:max-w-2xl rounded-2xl p-0 overflow-hidden">
+        <DialogHeader className="bg-[#C8102E] px-6 py-4">
+          <DialogTitle className="text-white text-lg font-semibold">Управление датами экзаменов</DialogTitle>
+        </DialogHeader>
+
+        <div className="px-6 py-5 max-h-[65vh] overflow-y-auto space-y-5" style={{ position: 'relative' }}>
+          {isLoading && (
+            <div className="absolute inset-0 bg-white/80 flex items-center justify-center z-50">
+              <Loader2 size={32} className="animate-spin text-[#C8102E]" />
+            </div>
+          )}
+
+          {/* Add date section */}
+          <div className="p-4 border border-gray-100 rounded-xl bg-white shadow-sm space-y-3">
+            <div className="flex items-center justify-between">
+              <h5 className="font-semibold text-gray-800 text-base">Добавить новую дату</h5>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleRestoreDates}
+                className="text-gray-600 border-gray-200 hover:bg-gray-50 flex items-center gap-1.5 rounded-lg text-xs"
+              >
+                <RotateCcw size={13} />
+                Восстановить исходные
+              </Button>
+            </div>
+            <div className="flex gap-2">
+              <Input
+                type="date"
+                value={customDate}
+                onChange={(e) => setCustomDate(e.target.value)}
+                className="rounded-xl bg-gray-50 border-gray-200 w-auto focus-visible:ring-[#C8102E]"
+              />
+              <Button
+                onClick={handleAddCustomDate}
+                className="bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl flex items-center gap-1.5"
+              >
+                <Plus size={15} />
+                Добавить
+              </Button>
+            </div>
           </div>
-        )}
-        
-        <div className="mb-4">
-          <div className="d-flex align-items-center mb-3">
-            <h5 className="mb-0 me-2">Добавить новую дату</h5>
-            <Button 
-              variant="outline-secondary" 
-              size="sm"
-              onClick={handleRestoreDates}
-              className="ms-auto d-flex align-items-center gap-1"
-            >
-              <RotateCcw size={16} />
-              <span>Восстановить исходные даты</span>
-            </Button>
-          </div>
-          
-          <div className="d-flex gap-2">
-            <Form.Control 
-              type="date" 
-              value={customDate} 
-              onChange={(e) => setCustomDate(e.target.value)}
-              className="w-auto"
-            />
-            <Button 
-              variant="success"
-              onClick={handleAddCustomDate}
-              className="d-flex align-items-center gap-1"
-            >
-              <Plus size={16} />
-              <span>Добавить</span>
-            </Button>
-          </div>
-        </div>
-        
-        <h5 className="mb-3">Выбранные даты экзаменов</h5>
-        
-        {selectedDates && selectedDates.length > 0 ? (
+
+          {/* Calendar section */}
           <div>
-            {Object.entries(groupDatesByMonth()).map(([monthKey, dates]) => 
-              renderCalendarMonth(dates, monthKey)
+            <h5 className="font-semibold text-gray-800 text-base mb-3">Выбранные даты экзаменов</h5>
+            {selectedDates && selectedDates.length > 0 ? (
+              <div>
+                {Object.entries(groupDatesByMonth()).map(([monthKey, dates]) =>
+                  renderCalendarMonth(dates, monthKey)
+                )}
+              </div>
+            ) : (
+              <div className="text-center py-8 px-4 border border-amber-200 rounded-xl bg-amber-50 text-amber-700 text-sm">
+                Нет выбранных дат. Добавьте даты или восстановите исходные.
+              </div>
             )}
           </div>
-        ) : (
-          <div className="alert alert-warning">
-            Нет выбранных дат. Добавьте даты или восстановите исходные.
-          </div>
-        )}
-      </Modal.Body>
-      <Modal.Footer>
-        <Button variant="secondary" onClick={onClose} disabled={isLoading}>
-          Отмена
-        </Button>
-        <Button 
-          variant="primary" 
-          onClick={handleComplete} 
-          disabled={isLoading || selectedDates.length === 0}
-          style={{ backgroundColor: '#C8102E', borderColor: '#C8102E' }}
-        >
-          Продолжить
-        </Button>
-      </Modal.Footer>
-    </Modal>
+        </div>
+
+        <DialogFooter className="px-6 py-4 bg-gray-50 border-t gap-2">
+          <Button
+            variant="outline"
+            onClick={onClose}
+            disabled={isLoading}
+            className="rounded-xl"
+          >
+            Отмена
+          </Button>
+          <Button
+            onClick={handleComplete}
+            disabled={isLoading || selectedDates.length === 0}
+            className="bg-[#C8102E] hover:bg-[#A00D26] text-white rounded-xl shadow-sm"
+          >
+            Продолжить
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   );
 };
 
