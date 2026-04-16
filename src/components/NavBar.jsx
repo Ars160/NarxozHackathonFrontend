@@ -84,7 +84,9 @@ const Navbar = () => {
         theme="light"
       />
       <div className="container mx-auto px-4 flex justify-between items-center">
-        <h1 className="text-2xl font-bold tracking-wide m-0">GENERATION EXAM</h1>
+        <Link to="/" className="flex items-center">
+          <img src="/Logo.png" alt="UniSchedule" className="h-10 w-auto object-contain brightness-0 invert" />
+        </Link>
         <div className="flex gap-4 items-center">
           {adminDashboardiSVisible && (
             <Link
