@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Calendar, Search, User, Download, ArrowUpDown, LogIn, Filter, UserPlus, ChevronDown, ChevronUp, SlidersHorizontal } from 'lucide-react';
 import { toast } from 'react-toastify';
+import { InlineAlert, useAlert } from './components/ui/InlineAlert';
 import { scheduleApi } from './services/Api';
 import './styles/style.css';
 import Navbar from './components/NavBar';
@@ -13,6 +14,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '.
 import { Badge } from './components/ui/badge';
 
 const ExamScheduler = () => {
+  const { alert, showAlert, clearAlert } = useAlert();
   const [scheduleData, setScheduleData] = useState([]);
   const [filteredData, setFilteredData] = useState([]);
   const [studentId, setStudentId] = useState('');
@@ -56,9 +58,9 @@ const ExamScheduler = () => {
   
 
   const handleEntryClick = useCallback((examData) => {
-    toast.info(`ВХОД В CRN ${examData.Section}`);
+    showAlert(`ВХОД В CRN ${examData.Section}`, 'info');
     navigate(`/section/${examData.Section}`);
-  }, [navigate]);
+  }, [navigate, showAlert]);
 
 // Функция, убирающая всё в круглых скобках и разбивающая по "+"
 const parseRoomString = (roomString) => {
@@ -144,40 +146,31 @@ const filterData = useCallback((data) => {
   };
 
   const fetchScheduleData = useCallback(async () => {
-    const schedulePromise = scheduleApi.getGeneralSchedule()
-      .then(data => {
-        const sanitizedData = (data || []).map(item => ({
-      ...item,
-      Room: item.Room ? String(item.Room) : "",
-      Date: item.Date ? String(item.Date) : "",
-      Subject: item.Subject ? String(item.Subject) : "",
-      Teacher: item.Teacher ? String(item.Teacher) : "",
-    }));
-  
-        setScheduleData(sanitizedData);
-        setFilteredData(sanitizedData);
-      });
-  
-    toast.promise(schedulePromise, {
-      pending: "Загрузка расписания...",
-      success: "Расписание успешно загружено",
-      error: "Ошибка при загрузке расписания"
-    });
-  
     try {
       setLoading(true);
-      await schedulePromise;
+      const data = await scheduleApi.getGeneralSchedule();
+      const sanitizedData = (data || []).map(item => ({
+        ...item,
+        Room: item.Room ? String(item.Room) : "",
+        Date: item.Date ? String(item.Date) : "",
+        Subject: item.Subject ? String(item.Subject) : "",
+        Teacher: item.Teacher ? String(item.Teacher) : "",
+      }));
+  
+      setScheduleData(sanitizedData);
+      setFilteredData(sanitizedData);
     } catch (err) {
       console.error(err);
+      showAlert("Ошибка при загрузке расписания", "error");
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [showAlert]);
   
 
   const fetchStudentSchedule = useCallback(async (id) => {
     if (!id.trim()) {
-      toast.warning('Пожалуйста, введите ID студента');
+      showAlert('Пожалуйста, введите ID студента', 'warning');
       return;
     }
     try {
@@ -196,14 +189,17 @@ const filterData = useCallback((data) => {
       
       setStudentSchedule(sanitizedData);
       setFilteredData(sanitizedData);
-      toast.success(`Расписание студента ${id} загружено`);
+      showAlert(`Найдено записей: ${sanitizedData.length}`, 'success');
     } catch (err) {
-      toast.error('Студент не найден');
+      // Очищаем предыдущие результаты, чтобы не оставались старые данные
+      setStudentSchedule([]);
+      setFilteredData([]);
+      showAlert(`Студент «${id}» не найден`, 'error');
       console.error(err);
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [showAlert]);
 
   const handleExport = async () => {
     try {
@@ -211,24 +207,24 @@ const filterData = useCallback((data) => {
         await scheduleApi.exportGeneralSchedule();
       } else {
         if (!studentId.trim()) {
-          toast.warning('Введите ID студента для экспорта');
+          showAlert('Введите ID студента для экспорта', 'warning');
           return;
         }
         await scheduleApi.exportStudentSchedule(studentId);
       }
-      toast.success('Файл успешно экспортирован');
+      showAlert('Файл успешно экспортирован', 'success');
     } catch (err) {
-      toast.error('Ошибка при экспорте файла');
+      showAlert('Ошибка при экспорте файла', 'error');
       console.error(err);
     }
   };
 
   const handleDownloadProctors = async () => {
     try {
-        await scheduleApi.exportDownloadProctors();
-      toast.success('Файл успешно экспортирован');
+      await scheduleApi.exportDownloadProctors();
+      showAlert('Файл успешно экспортирован', 'success');
     } catch (err) {
-      toast.error('Ошибка при экспорте файла');
+      showAlert('Ошибка при экспорте файла', 'error');
       console.error(err);
     }
   };
@@ -248,7 +244,7 @@ const filterData = useCallback((data) => {
       fetchStudentSchedule(studentId);
       setSelectedView('student');
     } else {
-      toast.warning('Пожалуйста, введите ID студента');
+      showAlert('Пожалуйста, введите ID студента', 'warning');
     }
   };
 
@@ -396,6 +392,7 @@ const filterData = useCallback((data) => {
 
   return (
     <div className="min-h-screen bg-[#F8F9FA] font-sans text-[#2D2D2D]">
+      <InlineAlert {...alert} onClose={clearAlert} />
       <Navbar />
 
       <main className="container mx-auto px-4 py-8">
