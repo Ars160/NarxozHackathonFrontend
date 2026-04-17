@@ -1,25 +1,19 @@
 import { useEffect, useState } from 'react';
 import { Home, ClipboardList, LayoutDashboard, Menu, X, LogOut } from 'lucide-react';
 import { useNavigate, useLocation, Link } from 'react-router-dom';
-import { ToastContainer, toast } from 'react-toastify';
-import 'react-toastify/dist/ReactToastify.css';
+import { InlineAlert, useAlert } from './ui/InlineAlert';
 
 const Navbar = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const getRole = localStorage.getItem('role');
   const [mobileOpen, setMobileOpen] = useState(false);
+  const { alert, showAlert, clearAlert } = useAlert();
 
   useEffect(() => {
     if (location.state?.message) {
       const { message, type = 'success' } = location.state;
-      switch (type) {
-        case 'success': toast.success(message); break;
-        case 'error':   toast.error(message);   break;
-        case 'info':    toast.info(message);    break;
-        case 'warning': toast.warning(message); break;
-        default:        toast(message);
-      }
+      showAlert(message, type);
       navigate(location.pathname, { replace: true, state: {} });
     }
   }, [location.state, navigate, location.pathname]);
@@ -73,19 +67,6 @@ const Navbar = () => {
 
   return (
     <>
-      <ToastContainer
-        position="top-right"
-        autoClose={3000}
-        hideProgressBar={false}
-        newestOnTop
-        closeOnClick
-        rtl={false}
-        pauseOnFocusLoss
-        draggable
-        pauseOnHover
-        theme="light"
-      />
-
       <nav className="bg-[#C8102E] text-white shadow-lg sticky top-0 z-50">
         <div className="container mx-auto px-4">
           <div className="flex items-center justify-between h-16">
@@ -163,6 +144,8 @@ const Navbar = () => {
           </div>
         )}
       </nav>
+
+      <InlineAlert {...alert} onClose={clearAlert} />
     </>
   );
 };

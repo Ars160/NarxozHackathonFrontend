@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { Plus, RotateCcw, Loader2, X as XIcon } from 'lucide-react';
-import { toast } from 'react-toastify';
 import { scheduleApi } from '../services/Api';
+import { InlineAlert, useAlert } from './ui/InlineAlert';
 import {
   Dialog,
   DialogContent,
@@ -17,6 +17,7 @@ const ManageDatesModal = ({ show, onClose, dates, onComplete }) => {
   const [isLoading, setIsLoading] = useState(false);
   const [selectedDates, setSelectedDates] = useState([]);
   const [customDate, setCustomDate] = useState('');
+  const { alert, showAlert, clearAlert } = useAlert();
 
   const sortDates = useCallback((dates) => {
     return [...dates].sort((a, b) => new Date(a) - new Date(b));
@@ -35,26 +36,26 @@ const ManageDatesModal = ({ show, onClose, dates, onComplete }) => {
     try {
       const response = await scheduleApi.removeDate(dateToRemove);
       updateDatesWithSort(response.dates || []);
-      toast.success(`Дата ${dateToRemove} успешно удалена`);
+      showAlert(`Дата ${dateToRemove} удалена`, 'success');
     } catch (error) {
-      toast.error('Ошибка при удалении даты');
+      showAlert('Ошибка при удалении даты', 'error');
     } finally {
       setIsLoading(false);
     }
   };
 
   const handleAddCustomDate = async () => {
-    if (!customDate) { toast.warning('Выберите дату для добавления'); return; }
-    if (selectedDates.includes(customDate)) { toast.info(`Дата ${customDate} уже существует`); return; }
+    if (!customDate) { showAlert('Выберите дату для добавления', 'warning'); return; }
+    if (selectedDates.includes(customDate)) { showAlert(`Дата ${customDate} уже существует`, 'info'); return; }
 
     setIsLoading(true);
     try {
       const response = await scheduleApi.addCustomDate(customDate);
       updateDatesWithSort(response.dates);
       setCustomDate('');
-      toast.success(`Дата ${customDate} успешно добавлена`);
+      showAlert(`Дата ${customDate} добавлена`, 'success');
     } catch (error) {
-      toast.error('Ошибка при добавлении даты');
+      showAlert('Ошибка при добавлении даты', 'error');
     } finally {
       setIsLoading(false);
     }
@@ -65,9 +66,9 @@ const ManageDatesModal = ({ show, onClose, dates, onComplete }) => {
     try {
       const response = await scheduleApi.restoreDates();
       updateDatesWithSort(response.dates || []);
-      toast.success('Даты успешно восстановлены');
+      showAlert('Даты восстановлены', 'success');
     } catch (error) {
-      toast.error('Ошибка при восстановлении дат');
+      showAlert('Ошибка при восстановлении дат', 'error');
     } finally {
       setIsLoading(false);
     }
@@ -176,6 +177,10 @@ const ManageDatesModal = ({ show, onClose, dates, onComplete }) => {
         </DialogHeader>
 
         <div className="px-6 py-5 max-h-[65vh] overflow-y-auto space-y-5">
+
+          {alert.message && (
+            <InlineAlert {...alert} onClose={clearAlert} />
+          )}
 
           {/* Add date section */}
           <div className="p-4 border border-gray-100 rounded-xl bg-white shadow-sm space-y-3">

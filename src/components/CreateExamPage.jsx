@@ -3,7 +3,7 @@ import Navbar from './NavBar';
 import { ClipboardList, LogIn, Trash2, CalendarDays, Clock, Hash } from 'lucide-react';
 import CreateExamModal from './CreateExamModal';
 import { scheduleApi } from '../services/Api';
-import { toast } from 'react-toastify';
+import { InlineAlert, useAlert } from './ui/InlineAlert';
 import { useNavigate } from 'react-router-dom';
 import { Button } from './ui/button';
 import { Card } from './ui/card';
@@ -14,6 +14,7 @@ const CreateExamPage = () => {
   const [showModal, setShowModal] = useState(false);
   const [sessions, setSessions] = useState([]);
   const [canCreateExam, setCanCreateExam] = useState(true);
+  const { alert, showAlert, clearAlert } = useAlert();
   const navigate = useNavigate();
 
   const checkDrafts = useCallback(async () => {
@@ -29,7 +30,7 @@ const CreateExamPage = () => {
         setShowModal(true);
       }
     } catch (err) {
-      toast.error('Ошибка при проверке черновиков');
+      showAlert('Ошибка при проверке черновиков', 'error');
       console.error(err);
     }
   }, [navigate]);
@@ -39,7 +40,7 @@ const CreateExamPage = () => {
       const data = await scheduleApi.getSessions();
       setSessions(data);
     } catch (err) {
-      toast.error('Ошибка при загрузке сессий');
+      showAlert('Ошибка при загрузке сессий', 'error');
       console.error(err);
     }
   }, []);
@@ -49,7 +50,7 @@ const CreateExamPage = () => {
       await scheduleApi.activateSession(sessionId);
       navigate('/');
     } catch (err) {
-      toast.error('Ошибка при активации сессии');
+      showAlert('Ошибка при активации сессии', 'error');
       console.error(err);
     }
   }, [navigate]);
@@ -58,10 +59,10 @@ const CreateExamPage = () => {
     if (window.confirm('Вы уверены, что хотите удалить эту сессию?')) {
       try {
         await scheduleApi.deleteSession(sessionId);
-        toast.success(`Сессия «${title}» удалена`);
+        showAlert(`Сессия «${title}» удалена`, 'success');
         fetchSessions();
       } catch (err) {
-        toast.error('Ошибка при удалении сессии');
+        showAlert('Ошибка при удалении сессии', 'error');
         console.error(err);
       }
     }
@@ -80,6 +81,7 @@ const CreateExamPage = () => {
       <Navbar />
 
       <main className="container mx-auto px-4 py-6 md:py-8">
+        <InlineAlert {...alert} onClose={clearAlert} />
         {/* Header */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
           <div>

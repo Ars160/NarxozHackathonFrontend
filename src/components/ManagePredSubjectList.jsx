@@ -1,12 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { toast } from 'react-toastify';
 import { Trash2, BookOpen, Users, Calendar, CheckCircle, ArrowUpDown, ChevronDown, ChevronRight, Search, Loader2 } from 'lucide-react';
 import '../styles/style.css';
 import Navbar from './NavBar';
 import { scheduleApi } from '../services/Api';
 import { GlobalLoader, LocalLoader } from './Loaderss';
 import { authHeaders } from '../utils/authHeaders';
+import { InlineAlert, useAlert } from './ui/InlineAlert';
 
 const ManagePredSubjectList = () => {
   const [subjects, setSubjects] = useState([]);
@@ -25,6 +25,7 @@ const ManagePredSubjectList = () => {
   const [pendingBookings, setPendingBookings] = useState([]);
   const [commitLoading, setCommitLoading] = useState(false);
 
+  const { alert, showAlert, clearAlert } = useAlert();
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -57,7 +58,7 @@ const ManagePredSubjectList = () => {
       setSubjects(Array.isArray(subjects) ? subjects : []);
 
     } catch (error) {
-      toast.error('Ошибка при загрузке списка предметов');
+      showAlert('Ошибка при загрузке списка предметов', 'error');
       setSubjects([]);
     }
   };
@@ -76,7 +77,7 @@ const ManagePredSubjectList = () => {
       
       if (!response.ok) {
         setSelectedSubject(null);
-        toast.info(`Группы для предмета "${subject}" не найдены`);
+        showAlert(`Группы для предмета «${subject}» не найдены`, 'warning');
         return;
       }
 
@@ -108,7 +109,7 @@ const ManagePredSubjectList = () => {
       setSelectedSubject(subject);
 
     } catch (error) {
-      toast.error(`Ошибка при загрузке групп для предмета "${subject}"`);
+      showAlert(`Ошибка при загрузке групп для предмета «${subject}»`, 'error');
     } finally {
       setGroupsLoading(false);
     }
@@ -130,9 +131,9 @@ const ManagePredSubjectList = () => {
           setSelectedSubject(null);
         }
         
-        toast.success(`Предмет "${subject}" удален`);
+        showAlert(`Предмет «${subject}» удалён`, 'success');
       } catch (error) {
-        toast.error(`Ошибка удаления предмета "${subject}"`);
+        showAlert(`Ошибка удаления предмета «${subject}»`, 'error');
       }
     }
   };
@@ -152,9 +153,9 @@ const ManagePredSubjectList = () => {
 
         setPendingBookings(prev => prev.filter(b => b.sectionId !== section));
         
-        toast.success(`Секция "${section}" удалена`);
+        showAlert(`Секция «${section}» удалена`, 'success');
       } catch (error) {
-        toast.error('Ошибка удаления секции');
+        showAlert('Ошибка удаления секции', 'error');
       }
     }
   };
@@ -194,7 +195,7 @@ const ManagePredSubjectList = () => {
       headers: { 'Content-Type': 'application/json', ...authHeaders().headers },
       body: JSON.stringify({ exams: [{ section_id: sectionId, duration: newDuration }] })
     });
-    res.ok ? toast.success('Длительность обновлена') : toast.error('Ошибка обновления');
+    res.ok ? showAlert('Длительность обновлена', 'success') : showAlert('Ошибка обновления', 'error');
   };
 
   const handleReady = async () => {
@@ -203,7 +204,7 @@ const ManagePredSubjectList = () => {
     const userRole = localStorage.getItem('role');
     const allowedRoles = ['admin-gum', 'admin-sdt', 'admin-sem', 'admin-spigu'];
     if (!allowedRoles.includes(userRole)) {
-      toast.error('Эта функция доступна только для subAdmin');
+      showAlert('Эта функция доступна только для subAdmin', 'error');
       return;
     }
 
@@ -260,10 +261,10 @@ const ManagePredSubjectList = () => {
       setPendingBookings([]);
       setPendingChanges({});
 
-      toast.success('Все изменения отправлены, статус: готово');
+      showAlert('Все изменения отправлены, статус: готово', 'success');
       navigate('/');
     } catch (error) {
-      toast.error(`Ошибка при отправке: ${error.message || error}`);
+      showAlert(`Ошибка при отправке: ${error.message || error}`, 'error');
     } finally {
       setReadyLoading(false);
     }
@@ -301,7 +302,7 @@ const ManagePredSubjectList = () => {
     const group = subjectGroups[selectedSubject].find(g => g.Section === sectionId);
 
     if (checked && !group.has_exam) {
-      toast.warning('Нельзя включить проктора без экзамена');
+      showAlert('Нельзя включить проктора без экзамена', 'warning');
       return;
     }
 
@@ -327,12 +328,12 @@ const ManagePredSubjectList = () => {
     const group = subjectGroups[selectedSubject].find(g => g.Section === sectionId);
 
     if (!group) {
-      toast.error('Секция не найдена');
+      showAlert('Секция не найдена', 'error');
       return;
     }
 
     if (checked && !group.has_exam) {
-      toast.warning('Нельзя включить требование аудитории без экзамена');
+      showAlert('Нельзя включить требование аудитории без экзамена', 'warning');
       return;
     }
 
@@ -380,7 +381,7 @@ const ManagePredSubjectList = () => {
     });
     setPendingChanges(newPendingChanges);
 
-    toast.success(`Все экзамены ${enable ? 'включены' : 'отключены'}`);
+    showAlert(`Все экзамены ${enable ? 'включены' : 'отключены'}`, 'success');
   };
 
   const handleToggleAllProctors = (enable) => {
@@ -388,7 +389,7 @@ const ManagePredSubjectList = () => {
 
     const groupsWithExam = subjectGroups[selectedSubject].filter(group => group.has_exam);
     if (groupsWithExam.length === 0) {
-      toast.warning('Нет групп с включенными экзаменами');
+      showAlert('Нет групп с включенными экзаменами', 'warning');
       return;
     }
 
@@ -411,7 +412,7 @@ const ManagePredSubjectList = () => {
     });
     setPendingChanges(newPendingChanges);
 
-    toast.success(`Все прокторы ${enable ? 'включены' : 'отключены'}`);
+    showAlert(`Все прокторы ${enable ? 'включены' : 'отключены'}`, 'success');
   };
 
   const handleToggleAllRooms = (enable) => {
@@ -419,7 +420,7 @@ const ManagePredSubjectList = () => {
 
     const groupsWithExam = subjectGroups[selectedSubject].filter(group => group.has_exam);
     if (groupsWithExam.length === 0) {
-      toast.warning('Нет групп с включенными экзаменами');
+      showAlert('Нет групп с включенными экзаменами', 'warning');
       return;
     }
 
@@ -442,27 +443,27 @@ const ManagePredSubjectList = () => {
     });
     setPendingChanges(newPendingChanges);
 
-    toast.success(`Все требования аудиторий ${enable ? 'включены' : 'отключены'}`);
+    showAlert(`Требования аудиторий ${enable ? 'включены' : 'отключены'}`, 'success');
   };
 
   const fetchFreeSlots = async () => {
     if (!classroomNumber) {
-      toast.warning('Введите номер аудитории');
+      showAlert('Введите номер аудитории', 'warning');
       return;
     }
     setSlotsLoading(true);
     try {
       const res = await fetch(`http://localhost:5000/api/classroom/free-slots?classroom_number=${encodeURIComponent(classroomNumber)}`, authHeaders());
       if (!res.ok) {
-        toast.error('Не удалось загрузить слоты для аудитории');
+        showAlert('Не удалось загрузить слоты для аудитории', 'error');
         setFreeSlots([]);
         return;
       }
       const data = await res.json();
       setFreeSlots(Array.isArray(data) ? data : []);
-      toast.success('Слоты загружены');
+      showAlert(`Найдено слотов: ${Array.isArray(data) ? data.length : 0}`, 'success');
     } catch (err) {
-      toast.error('Ошибка при загрузке слотов');
+      showAlert('Ошибка при загрузке слотов', 'error');
       setFreeSlots([]);
     } finally {
       setSlotsLoading(false);
@@ -476,12 +477,12 @@ const ManagePredSubjectList = () => {
   const handleBookSlotLocal = (sectionId) => {
     const slotId = selectedSlotForSection[sectionId];
     if (!slotId) {
-      toast.warning('Выберите слот перед закреплением');
+      showAlert('Выберите слот перед закреплением', 'warning');
       return;
     }
 
     if (pendingBookings.some(b => b.sectionId === sectionId)) {
-      toast.info('Секция уже локально закреплена');
+      showAlert('Секция уже локально закреплена', 'info');
       return;
     }
 
@@ -497,13 +498,13 @@ const ManagePredSubjectList = () => {
 
     setFreeSlots(prev => prev.map(s => (String(s.id) === String(slotId) ? { ...s, is_booked: true } : s)));
 
-    toast.info('Слот локально закреплён');
+    showAlert('Слот локально закреплён — нажмите «Отправить» для сохранения', 'info');
   };
 
   const cancelLocalBooking = (sectionId) => {
     const booking = pendingBookings.find(b => b.sectionId === sectionId);
     if (!booking) {
-      toast.info('Локальная бронь не найдена');
+      showAlert('Локальная бронь не найдена', 'warning');
       return;
     }
 
@@ -525,12 +526,12 @@ const ManagePredSubjectList = () => {
       return updated;
     });
 
-    toast.info('Локальная бронь отменена');
+    showAlert('Локальная бронь отменена', 'info');
   };
 
   const handleCommitBookings = async () => {
     if (pendingBookings.length === 0) {
-      toast.info('Нет локально выбранных бронирований');
+      showAlert('Нет локально выбранных бронирований', 'warning');
       return;
     }
 
@@ -582,9 +583,9 @@ const ManagePredSubjectList = () => {
       });
 
       setPendingBookings([]);
-      toast.success('Все выбранные слоты успешно закреплены на сервере');
+      showAlert('Все выбранные слоты успешно закреплены!', 'success');
     } catch (error) {
-      toast.error(`Не удалось закрепить слоты: ${error.message || error}`);
+      showAlert(`Не удалось закрепить слоты: ${error.message || error}`, 'error');
     } finally {
       setCommitLoading(false);
     }
@@ -619,7 +620,9 @@ const ManagePredSubjectList = () => {
       
       <main className="w-full max-w-[1600px] mx-auto px-4 sm:px-6 py-6 md:py-8">
         {readyLoading && <GlobalLoader />}
-        
+
+        <InlineAlert {...alert} onClose={clearAlert} />
+
         {/* Верхняя панель */}
         <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-5 mb-6 z-20">
           <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">

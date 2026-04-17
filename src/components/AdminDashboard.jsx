@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useMemo } from "react";
-import { toast } from "react-toastify";
 import { RefreshCcw, AlertCircle, Clock, BookOpen, Users, MapPin, ChevronDown, ChevronUp, ArrowLeft, Filter, Search } from "lucide-react";
+import { InlineAlert, useAlert } from './ui/InlineAlert';
 import Navbar from "./NavBar";
 import { GlobalLoader } from "./Loaderss";
 import { Button } from './ui/button';
@@ -14,7 +14,8 @@ const API_URL = "http://localhost:5000/api";
 const AdminDashboard = () => {
   const [conflicts, setConflicts] = useState([]);
   const [loading, setLoading] = useState(false);
-  const [expandedRow, setExpandedRow] = useState(null); // only one row expanded
+  const [expandedRow, setExpandedRow] = useState(null);
+  const { alert, showAlert, clearAlert } = useAlert();
   
   // Filters State
   const [showFilters, setShowFilters] = useState(false);
@@ -87,9 +88,9 @@ const AdminDashboard = () => {
       setConflicts(data.conflicts || []);
       sessionStorage.setItem("conflicts_data", JSON.stringify(data.conflicts || []));
       
-      if (force) toast.success("Конфликты успешно обновлены");
+      if (force) showAlert('Конфликты успешно обновлены', 'success');
     } catch (err) {
-      toast.error("Ошибка при загрузке конфликтов");
+      showAlert('Ошибка при загрузке конфликтов', 'error');
       console.error(err);
     } finally {
       setLoading(false);
@@ -110,6 +111,8 @@ const AdminDashboard = () => {
 
       <main className="container mx-auto px-4 py-8 relative">
         {loading && <GlobalLoader />}
+
+        <InlineAlert {...alert} onClose={clearAlert} />
 
         {/* Header & Back Button */}
         <div className="mb-6 flex flex-col gap-4">

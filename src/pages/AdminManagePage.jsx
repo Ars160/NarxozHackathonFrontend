@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { toast } from 'react-toastify';
 import { CheckCircle, XCircle, Users, Loader2, Zap, RefreshCw } from 'lucide-react';
+import { InlineAlert, useAlert } from '../components/ui/InlineAlert';
 import '../styles/style.css';
 import Navbar from '../components/NavBar';
 import { GlobalLoader } from '../components/Loaderss';
@@ -22,6 +22,7 @@ const AdminManagePage = () => {
   const [subAdmins, setSubAdmins] = useState(defaultAdmins);
   const [scheduleLoading, setScheduleLoading] = useState(false);
   const [isRefreshing, setIsRefreshing] = useState(false);
+  const { alert, showAlert, clearAlert } = useAlert();
   const navigate = useNavigate();
 
   const fetchSubAdmins = async () => {
@@ -39,7 +40,7 @@ const AdminManagePage = () => {
       );
     } catch (error) {
       console.error('Error fetching subAdmins:', error);
-      toast.error('Ошибка загрузки статусов');
+      showAlert('Ошибка загрузки статусов', 'error');
     } finally {
       setIsRefreshing(false);
     }
@@ -54,11 +55,11 @@ const AdminManagePage = () => {
     setScheduleLoading(true);
     try {
       await scheduleApi.generateSchedule();
-      toast.success('Расписание успешно сгенерировано');
+      showAlert('Расписание успешно сгенерировано', 'success');
       navigate('/');
     } catch (error) {
       console.error('Error generating schedule:', error);
-      toast.error('Ошибка при генерации расписания');
+      showAlert('Ошибка при генерации расписания', 'error');
     } finally {
       setScheduleLoading(false);
     }
@@ -74,6 +75,7 @@ const AdminManagePage = () => {
       {scheduleLoading && <GlobalLoader />}
 
       <main className="container mx-auto px-4 py-8">
+        <InlineAlert {...alert} onClose={clearAlert} />
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-6">
           <div>
             <h2 className="text-2xl font-bold text-gray-900">Управление расписанием</h2>
