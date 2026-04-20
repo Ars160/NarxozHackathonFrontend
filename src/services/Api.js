@@ -1,5 +1,30 @@
 import { authHeaders } from "../utils/authHeaders"
 const BASE_URL = 'http://localhost:5000';
+const AI_BASE_URL = 'http://localhost:8000';
+
+export const aiApi = {
+  chatSend: async (message, studentId = null) => {
+    try {
+      const response = await fetch(`${AI_BASE_URL}/api/chat`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ 
+          message, 
+          student_id: studentId 
+        }),
+      });
+      if (!response.ok) {
+        throw new Error('Network response was not ok');
+      }
+      return await response.json();
+    } catch (error) {
+      console.error('Error sending message to AI:', error);
+      throw error;
+    }
+  }
+};
 
 export const scheduleApi = {
   getGeneralSchedule: async () => {

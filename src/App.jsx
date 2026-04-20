@@ -7,6 +7,7 @@ import { scheduleApi } from './services/Api';
 import './styles/style.css';
 import Navbar from './components/NavBar';
 import AssignProctorModal from './components/AssignProctorModal';
+import ChatWidget from './components/ChatWidget';
 import { Card, CardContent } from './components/ui/card';
 import { Input } from './components/ui/input';
 import { Button } from './components/ui/button';
@@ -598,6 +599,7 @@ const filterData = useCallback((data) => {
           </div>
         )}
       </main>
+      <ChatWidget />
     </div>
   );
 };
