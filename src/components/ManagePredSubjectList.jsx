@@ -219,11 +219,22 @@ const ManagePredSubjectList = () => {
       duration: changes.duration
     }));
 
-    const bookingsPayload = pendingBookings.map(b => ({
-      slot_id: Number(b.slotId),
-      subject: b.subject,
-      sections: [b.sectionId]
-    }));
+    const bookingsMap = {};
+    pendingBookings.forEach(b => {
+      const key = `${b.date}::${b.startTime}::${b.classroomNumber}::${b.subject}`;
+      if (!bookingsMap[key]) {
+        bookingsMap[key] = {
+          date: b.date,
+          start_time: b.startTime,
+          duration: b.duration,
+          classroom_number: b.classroomNumber,
+          subject: b.subject,
+          sections: []
+        };
+      }
+      bookingsMap[key].sections.push(b.sectionId);
+    });
+    const bookingsPayload = Object.values(bookingsMap);
 
     try {
       const baseAuth = authHeaders() || {};
@@ -236,7 +247,7 @@ const ManagePredSubjectList = () => {
 
       if (bookingsPayload.length > 0) {
         promises.push(
-          fetch('http://localhost:5000/api/slots/book', {
+          fetch('http://localhost:5000/api/book-slot', {
             ...(baseAuth || {}),
             method: 'POST',
             headers,
@@ -486,7 +497,24 @@ const ManagePredSubjectList = () => {
       return;
     }
 
-    setPendingBookings(prev => [...prev, { sectionId, slotId: Number(slotId), subject: selectedSubject }]);
+    const slotObj = freeSlots.find(s => String(s.id) === String(slotId));
+    if (!slotObj) {
+      showAlert('Ошибка: данные слота не найдены', 'error');
+      return;
+    }
+
+    const group = subjectGroups[selectedSubject].find(g => g.Section === sectionId);
+    const duration = group?.duration || 90;
+
+    setPendingBookings(prev => [...prev, { 
+      sectionId, 
+      slotId: Number(slotId), 
+      subject: selectedSubject,
+      date: slotObj.start_time.split('T')[0],
+      startTime: slotObj.start_time.split('T')[1].substring(0, 5),
+      duration,
+      classroomNumber: slotObj.classroom_number
+    }]);
 
     setSubjectGroups(prev => {
       const updated = { ...prev };
@@ -541,8 +569,17 @@ const ManagePredSubjectList = () => {
     try {
       const map = {};
       pendingBookings.forEach(b => {
-        const key = `${b.slotId}::${b.subject}`;
-        if (!map[key]) map[key] = { slot_id: Number(b.slotId), subject: b.subject, sections: [] };
+        const key = `${b.date}::${b.startTime}::${b.classroomNumber}::${b.subject}`;
+        if (!map[key]) {
+          map[key] = { 
+            date: b.date,
+            start_time: b.startTime,
+            duration: b.duration,
+            classroom_number: b.classroomNumber,
+            subject: b.subject, 
+            sections: [] 
+          };
+        }
         map[key].sections.push(b.sectionId);
       });
 
@@ -554,7 +591,7 @@ const ManagePredSubjectList = () => {
         'Content-Type': 'application/json'
       };
 
-      const res = await fetch('http://localhost:5000/api/slots/book', {
+      const res = await fetch('http://localhost:5000/api/book-slot', {
         ...(baseAuth || {}),
         method: 'POST',
         headers,
